@@ -4,6 +4,7 @@ export HanabiEnv
 
 @enum HANABI_OBSERVATION_ENCODER_TYPE CANONICAL
 @enum COLOR R Y G W B
+@enum HANABI_END_OF_GAME_TYPE NOT_FINISHED OUT_OF_LIFE_TOKENS OUT_OF_CARDS COMPLETED_FIREWORKS
 
 const CHANCE_PLAYER_ID = -1
 
@@ -13,7 +14,7 @@ struct PlayCard <: AbstractMove
     card_idx::Int
 end
 
-function to_hanabi_move(move::PlayCard)
+function convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, move::PlayCard)
     move = Ref{HanabiMove}()
     get_play_move(env.card_idx, move)
     move
@@ -23,7 +24,7 @@ struct DiscardCard <: AbstractMove
     card_idx::Int
 end
 
-function to_hanabi_move(move::DiscardCard)
+function convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, move::DiscardCard)
     move = Ref{HanabiMove}()
     get_discard_move(env.card_idx, move)
     move
@@ -36,7 +37,7 @@ end
 
 RevealColor(target_offset::Int, color::COLOR) = RevealColor(target_offset, Int(color))
 
-function to_hanabi_move(move::RevealColor)
+function convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, move::RevealColor)
     move = Ref{HanabiMove}()
     get_reveal_color_move(move.target_offset, move.color, move)
     move
@@ -47,7 +48,7 @@ struct RevealRank <: AbstractMove
     rank::Int
 end
 
-function to_hanabi_move(move::RevealRank)
+function convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, move::RevealRank)
     move = Ref{HanabiMove}()
     get_reveal_rank_move(move.target_offset, move.rank, move)
     move
@@ -122,7 +123,7 @@ function interact!(env::HanabiEnv, action::Int)
 end
 
 function interact!(env::HanabiEnv, action::AbstractMove)
-    move = to_hanabi_move(action)
+    move = convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, action)
     _apply_move(env, move)
     nothing
 end
@@ -136,4 +137,12 @@ function _apply_move(env::HanabiEnv, move)
     end
     new_score = state_score(env.state)
     env.reward = Dict(player, new_score - old_score)
+end
+
+function observe(env::HanabiEnv; observer)
+    observation = Ref{HanabiObservation}()
+    new_observation(env.state, observer, observation)
+    (observation = encode_observation(env.observation_encoder, observation)
+     reward      = get(env.reward, observer, zero(Int32)),
+     isdone      = state_end_of_game_states(env.state) != NOT_FINISHED)
 end
