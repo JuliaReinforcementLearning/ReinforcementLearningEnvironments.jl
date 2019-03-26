@@ -19,20 +19,20 @@ struct PlayCard <: AbstractMove
     card_idx::Int
 end
 
-function convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, move::PlayCard)
-    move = Ref{HanabiMove}()
-    get_play_move(env.card_idx, move)
-    move
+function Base.convert(HanabiMove, move::PlayCard)
+    m = Ref{HanabiMove}()
+    get_play_move(move.card_idx, m)
+    m
 end
 
 struct DiscardCard <: AbstractMove
     card_idx::Int
 end
 
-function convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, move::DiscardCard)
-    move = Ref{HanabiMove}()
-    get_discard_move(env.card_idx, move)
-    move
+function Base.convert(HanabiMove, move::DiscardCard)
+    m = Ref{HanabiMove}()
+    get_discard_move(move.card_idx, m)
+    m
 end
 
 struct RevealColor <: AbstractMove
@@ -42,10 +42,10 @@ end
 
 RevealColor(target_offset::Int, color::COLOR) = RevealColor(target_offset, Int(color))
 
-function convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, move::RevealColor)
-    move = Ref{HanabiMove}()
-    get_reveal_color_move(move.target_offset, move.color, move)
-    move
+function Base.convert(HanabiMove, move::RevealColor)
+    m = Ref{HanabiMove}()
+    get_reveal_color_move(move.target_offset, move.color, m)
+    m
 end
 
 struct RevealRank <: AbstractMove
@@ -53,21 +53,21 @@ struct RevealRank <: AbstractMove
     rank::Int
 end
 
-function convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, move::RevealRank)
-    move = Ref{HanabiMove}()
-    get_reveal_rank_move(move.target_offset, move.rank, move)
-    move
+function Base.convert(HanabiMove, move::RevealRank)
+    m = Ref{HanabiMove}()
+    get_reveal_rank_move(move.target_offset, move.rank, m)
+    m
 end
 
-function convert(AbstractMove, move::Base.RefValue{Hanabi.LibHanabi.PyHanabiMove})
+function Base.convert(AbstractMove, move::Base.RefValue{Hanabi.LibHanabi.PyHanabiMove})
     move_t = move_type(move)
-    if move_t == PLAY
+    if move_t == Int(PLAY)
         PlayCard(card_index(move))
-    elseif move_t == DISCARD
+    elseif move_t == Int(DISCARD)
         DiscardCard(card_index(move))
-    elseif move_t == REVEAL_COLOR
+    elseif move_t == Int(REVEAL_COLOR)
         RevealColor(target_offset(move), move_color(move))
-    elseif move_t == REVEAL_RANK
+    elseif move_t == Int(REVEAL_RANK)
         RevealRank(target_offset(move), move_rank(move))
     else
         error("unsupported move type: $move_t")
@@ -118,7 +118,9 @@ mutable struct HanabiEnv
         # action_space = DiscreteSpace(Int(max_moves(game)) - 1, 0)  # start from 0
 
         # new(game, state, observation_encoder, observation_space, action_space, Dict{Int32, Int32}())
-        new(game, state, observation_encoder, Dict{Int32, Int32}())
+        env = new(game, state, observation_encoder, Dict{Int32, Int32}())
+        reset!(env)  # reset immediately
+        env
     end
 end
 
@@ -142,6 +144,9 @@ function reset!(env::HanabiEnv)
     state = Ref{HanabiState}()
     new_state(env.game, state)
     env.state = state
+    while state_cur_player(env.state) == CHANCE_PLAYER_ID 
+        state_deal_random_card(env.state)
+    end
     nothing
 end
 
@@ -153,7 +158,7 @@ function interact!(env::HanabiEnv, action::Int)
 end
 
 function interact!(env::HanabiEnv, action::AbstractMove)
-    move = convert(Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}, action)
+    move = convert(HanabiMove, action)
     _apply_move(env, move)
     nothing
 end
@@ -169,7 +174,7 @@ function _apply_move(env::HanabiEnv, move)
     env.reward = Dict(player, new_score - old_score)
 end
 
-function observe(env::HanabiEnv; observer)
+function observe(env::HanabiEnv, observer)
     observation = Ref{HanabiObservation}()
     new_observation(env.state, observer, observation)
     (observation = _encode_observation(observation, env.observation_encoder),
@@ -188,47 +193,73 @@ function observe(env::HanabiEnv)
         obs_dict = obs_to_dict(env, observation)
         push!(observations, obs_dict)
     end
-
     Dict(
-        "current_player": state_cur_player(env.state),
-        "observations": observations
+        "current_player" => state_cur_player(env.state),
+        "observations"   => observations
     )
 end
 
 function obs_to_dict(env::HanabiEnv, obs)
+    legal_moves, legal_moves_as_int = legal_jl_moves(env, obs)
+    current_player = state_cur_player(env.state)
     Dict(
-        "current_player"        => state_cur_player(env.state),
+        "current_player"        => current_player,
         "current_player_offset" => obs_cur_player_offset(obs),
         "life_tokens"           => obs_life_tokens(obs),
         "information_tokens"    => obs_information_tokens(obs),
         "num_players"           => obs_num_players(obs),
         "deck_size"             => obs_deck_size(obs),
-        "fireworks"             => Dict(c => observation_fireworks(obs, c) for c in instances(COLOR)),
-        "legal_moves"           => [convert(AbstractMove, x) for x in legal_moves(obs)],
-        "legal_moves_as_int"    => [get_move_uid(env.game, move) for move in legal_moves(observation)],
+        "fireworks"             => Dict(c => obs_fireworks(obs, c) for c in instances(COLOR)),
+        "legal_moves"           => legal_moves,
+        "legal_moves_as_int"    => legal_moves_as_int,
         "observed_hands"        => [begin
                                         card_ref = Ref{HanabiCard}()
-                                        obs_get_hand_card(observation, pid, i, card_ref)
+                                        obs_get_hand_card(obs, current_player, i, card_ref)
                                         card_ref[]
                                     end
-                                    for i in 0:obs_get_hand_size(observation, pid)-1],
+                                    for i in 0:obs_get_hand_size(obs, current_player)-1],
         "discard_pile"          => [begin
                                         card_ref = Ref{HanabiCard}()
                                         obs_get_discard(obs, i, card_ref)
                                         card_ref[]
                                     end
                                     for i in 0:obs_discard_pile_size(obs)-1],
-        "card_knowledge"        => [[begin
-                                        kd = Ref{HanabiCardKnowledge}()
-                                        obs_get_hand_card_knowledge(obs, pid, i, kd)
-                                        Dict(
-                                            "color" => color_was_hinted(kd) ? COLOR(known_color(kd)) : nothing,
-                                            "rank"  => rank_was_hinted(kd) ? known_rank(kd) : nothing)
-                                     end
-                                     for i in 0:obs_get_hand_size(obs, pid) - 1]
-                                    for pid in 0:obs_num_players(obs)-1],
+        "card_knowledge"        => get_card_knowledge(obs),
         "vectorized"            => _encode_observation(obs, env.observation_encoder),
         "observation"           => obs,
-        "observation_string"    => unsafe_string(obs_to_string(observation))
+        "observation_string"    => unsafe_string(obs_to_string(obs))
     )
+end
+
+###
+### Some Useful APIs
+###
+
+function legal_jl_moves(env::HanabiEnv, obs)
+    moves, moves_as_int = [], []
+    for i in 0:obs_num_legal_moves(obs)-1
+        move = Ref{HanabiMove}()
+        obs_get_legal_move(obs, i, move)
+        push!(moves, convert(AbstractMove, move))
+        push!(moves_as_int, get_move_uid(env.game, move))
+    end
+    moves, moves_as_int
+end
+
+function get_card_knowledge(obs)
+    knowledges = []
+    for pid in 0:obs_num_players(obs)-1
+        hand_kd = []
+        for i in 0:obs_get_hand_size(obs, pid) - 1
+            kd = Ref{HanabiCardKnowledge}()
+            obs_get_hand_card_knowledge(obs, pid, i, kd)
+            push!(
+                hand_kd,
+                Dict{String, Any}(
+                    "color" => color_was_hinted(kd) > 0 ? COLOR(known_color(kd)) : nothing,
+                    "rank"  => rank_was_hinted(kd) > 0 ? known_rank(kd) : nothing))
+        end
+        push!(knowledges, hand_kd)
+    end
+    knowledges
 end
