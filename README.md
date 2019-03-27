@@ -57,7 +57,7 @@ By default, only some basic environments are installed. If you want to use some 
 | `AtariEnv` | [ArcadeLearningEnvironment.jl](https://github.com/JuliaReinforcementLearning/ArcadeLearningEnvironment.jl) | |
 | `ViZDoomEnv` | [ViZDoom.jl](https://github.com/JuliaReinforcementLearning/ViZDoom.jl) | Currently only a basic environment is supported. (By calling `basic_ViZDoom_env()`)|
 | `GymEnv` | [PyCall.jl](https://github.com/JuliaPy/PyCall.jl) | You need to manually install `gym` first |
-| `HanabiEnv` | [Hanabi.jl](https://github.com/findmyway/Hanabi.jl) | `Hanabi.jl` hasn't been registered yet. Install by `pkg> add https://github.com/findmyway/Hanabi.jl` |
+| `HanabiEnv` | [Hanabi.jl](https://github.com/JuliaReinforcementLearning/Hanabi.jl) | `Hanabi.jl` hasn't been registered yet. Install by `pkg> add https://github.com/JuliaReinforcementLearning/Hanabi.jl` |
 
 **TODO:**
 
