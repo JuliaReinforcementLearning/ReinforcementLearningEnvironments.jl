@@ -64,20 +64,20 @@ function Base.convert(HanabiMove, move::RevealRank)
     m
 end
 
-function Base.convert(AbstractMove, move::Base.RefValue{Hanabi.LibHanabi.PyHanabiMove})
-    move_t = move_type(move)
-    if move_t == Int(PLAY)
-        PlayCard(card_index(move))
-    elseif move_t == Int(DISCARD)
-        DiscardCard(card_index(move))
-    elseif move_t == Int(REVEAL_COLOR)
-        RevealColor(target_offset(move), move_color(move))
-    elseif move_t == Int(REVEAL_RANK)
-        RevealRank(target_offset(move), move_rank(move)+1)
-    else
-        error("unsupported move type: $move_t")
-    end
-end
+# function Base.convert(AbstractMove, move::Base.RefValue{Hanabi.LibHanabi.PyHanabiMove})
+#     move_t = move_type(move)
+#     if move_t == Int(PLAY)
+#         PlayCard(card_index(move))
+#     elseif move_t == Int(DISCARD)
+#         DiscardCard(card_index(move))
+#     elseif move_t == Int(REVEAL_COLOR)
+#         RevealColor(target_offset(move), move_color(move))
+#     elseif move_t == Int(REVEAL_RANK)
+#         RevealRank(target_offset(move), move_rank(move)+1)
+#     else
+#         error("unsupported move type: $move_t")
+#     end
+# end
 
 """
     HanabiEnv(;kw...)
@@ -97,6 +97,7 @@ players                = 2
 mutable struct HanabiEnv
     game::Base.RefValue{Hanabi.LibHanabi.PyHanabiGame}
     state::Base.RefValue{Hanabi.LibHanabi.PyHanabiState}
+    move::Base.RefValue{Hanabi.LibHanabi.PyHanabiMove}
     observation_encoder::Base.RefValue{Hanabi.LibHanabi.PyHanabiObservationEncoder}
     observations::Vector{Base.RefValue{Hanabi.LibHanabi.PyHanabiObservation}}
     observation_space::MultiDiscreteSpace{Int64, 1}
@@ -113,8 +114,7 @@ mutable struct HanabiEnv
             new_game(game, length(params), params)
         end
 
-        state = Ref{HanabiState}()
-        new_state(game, state)
+        state, move = Ref{HanabiState}(), Ref{HanabiMove}()
 
         observation_encoder = Ref{HanabiObservationEncoder}()
         new_observation_encoder(observation_encoder, game, CANONICAL)
@@ -122,10 +122,9 @@ mutable struct HanabiEnv
         observations = [Ref{HanabiObservation}() for _ in 1:num_players(game)]
 
         observation_space = MultiDiscreteSpace(ones(Int, observation_length), zeros(Int, observation_length))
-
         action_space = DiscreteSpace(max_moves(game) - 1, 0)  # start from 0
 
-        env = new(game, state, observation_encoder, observations, observation_space, action_space, Dict{Int32, Int32}())
+        env = new(game, state, move, observation_encoder, observations, observation_space, action_space, Dict{Int32, Int32}())
         reset!(env)  # reset immediately
         env
     end
@@ -155,9 +154,7 @@ Base.show(io::IO, state::Base.RefValue{Hanabi.LibHanabi.PyHanabiState}) = print(
 Base.show(io::IO, obs::Base.RefValue{Hanabi.LibHanabi.PyHanabiObservation}) = print(io, unsafe_string(obs_to_string(obs)))
 
 function reset!(env::HanabiEnv)
-    state = Ref{HanabiState}()
-    new_state(env.game, state)
-    env.state = state
+    new_state(env.game, env.state)
     while state_cur_player(env.state) == CHANCE_PLAYER_ID 
         state_deal_random_card(env.state)
     end
@@ -168,9 +165,8 @@ function reset!(env::HanabiEnv)
 end
 
 function interact!(env::HanabiEnv, action::Integer)
-    move = Ref{HanabiMove}()
-    get_move_by_uid(env.game, action, move)
-    _apply_move(env, move)
+    get_move_by_uid(env.game, action, env.move)
+    _apply_move(env, env.move)
     nothing
 end
 
@@ -188,22 +184,22 @@ function _apply_move(env::HanabiEnv, move)
         state_deal_random_card(env.state)
     end
     new_score = state_score(env.state)
-    env.reward = Dict(player => new_score - old_score)
+    # env.reward = Dict(player => new_score - old_score)
     for pid in 0:num_players(env.game)-1
         new_observation(env.state, pid, env.observations[pid+1])
     end
 end
 
 function observe(env::HanabiEnv, observer=state_cur_player(env.state))
-    observation = Ref{HanabiObservation}()
-    new_observation(env.state, observer, observation)
+    observation = env.observations[observer+1]
     (observation     = _encode_observation(observation, env.observation_encoder),
      reward          = get(env.reward, observer, zero(Int32)),
      isdone          = state_end_of_game_status(env.state) != NOT_FINISHED,
-     raw_observation = env.observations[observer+1])
+    #  raw_observation = env.observations[observer+1])
+    )
 end
 
-_encode_observation(observation, encoder) = [parse(Int, x) for x in split(unsafe_string(encode_observation(encoder, observation)), ',')]
+_encode_observation(observation, encoder) = []
 
 ###
 ### Some Useful APIs
@@ -221,17 +217,16 @@ end
 
 legal_moves(env::HanabiEnv, pid=state_cur_player(env.state)) = legal_moves(env.observations[pid+1])
 
-function legal_actions(obs, game)
-    moves = Int32[]
-    for i in 0:obs_num_legal_moves(obs)-1
-        move = Ref{HanabiMove}()
-        obs_get_legal_move(obs, i, move)
-        push!(moves, get_move_uid(game, move))
+function legal_actions(env::HanabiEnv)
+    pid=state_cur_player(env.state)
+    obs = env.observations[pid+1]
+    moves = Vector{Int32}(undef, obs_num_legal_moves(obs))
+    for i in 1:length(moves)
+        obs_get_legal_move(obs, i-1, env.move)
+        moves[i] = get_move_uid(env.game, env.move)
     end
     moves
 end
-
-legal_actions(env::HanabiEnv, pid=state_cur_player(env.state)) = legal_actions(env.observations[pid+1], env.game)
 
 function get_card_knowledge(obs)
     knowledges = []
