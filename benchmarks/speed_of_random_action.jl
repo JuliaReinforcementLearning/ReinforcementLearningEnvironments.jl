@@ -27,8 +27,7 @@ function run_random_actions(env::HanabiEnv, n=N_STEPS)
     reset!(env)
     for _ in 1:n
         a = rand(legal_actions(env))
-        interact!(env, a)
-        obs, reward, isdone = observe(env)
+        obs, reward, isdone = interact!(env, a)
         if isdone
             reset!(env)
         end
