@@ -105,7 +105,7 @@ mutable struct HanabiEnv <: AbstractEnv
             get_move_by_uid(game, i-1, moves[i])
         end
 
-        env = new(game, state, observation_encoder, observation_space, action_space, moves, HanabiResult(Int32(0), Int32(0)))
+        env = new(game, state, moves, observation_encoder, observation_space, action_space, HanabiResult(Int32(0), Int32(0)))
         reset!(env)  # reset immediately
         env
     end
