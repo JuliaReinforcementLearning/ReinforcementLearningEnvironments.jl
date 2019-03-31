@@ -99,7 +99,7 @@ mutable struct HanabiEnv <: AbstractEnv
         observation_space = MultiDiscreteSpace(ones(Int, observation_length), zeros(Int, observation_length))
 
         n_moves = max_moves(game)
-        action_space = DiscreteSpace(n_moves)
+        action_space = DiscreteSpace(Int(n_moves))
         moves = [Ref{HanabiMove}() for _ in 1:n_moves]
         for i in 1:n_moves
             get_move_by_uid(game, i-1, moves[i])
