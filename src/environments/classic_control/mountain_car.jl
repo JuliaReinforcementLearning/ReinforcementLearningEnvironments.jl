@@ -8,7 +8,7 @@ struct MountainCarEnvParams{T}
     max_pos::T
     max_speed::T
     goal_pos::T
-    max_steps::Int64
+    max_steps::Int
 end
 
 mutable struct MountainCarEnv{T, R<:AbstractRNG} <: AbstractEnv
@@ -16,9 +16,9 @@ mutable struct MountainCarEnv{T, R<:AbstractRNG} <: AbstractEnv
     action_space::DiscreteSpace
     observation_space::MultiContinuousSpace{(2,), 1}
     state::Array{T, 1}
-    action::Int64
+    action::Int
     done::Bool
-    t::Int64
+    t::Int
     rng::R
 end
 
