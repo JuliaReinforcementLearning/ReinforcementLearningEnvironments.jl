@@ -41,13 +41,13 @@ end
 
 function parse_move(s::String)
     m = match(r"PlayCard\((?<card_idx>[1-5])\)", s)
-    !isnothing(m) && return PlayCard(parse(Int, m[:card_idx]))
+    !(m === nothing) && return PlayCard(parse(Int, m[:card_idx]))
     m = match(r"DiscardCard\((?<card_idx>[1-5])\)", s)
-    !isnothing(m) && return DiscardCard(parse(Int, m[:card_idx]))
+    !(m === nothing) && return DiscardCard(parse(Int, m[:card_idx]))
     m = match(r"RevealColor\((?<target>[1-5]),(?<color>[RYGWB])\)", s)
-    !isnothing(m) && return RevealColor(parse(Int, m[:target]), COLORS_DICT[m[:color]])
+    !(m === nothing) && return RevealColor(parse(Int, m[:target]), COLORS_DICT[m[:color]])
     m = match(r"RevealRank\((?<target>[1-5]),(?<rank>[1-5])\)", s)
-    !isnothing(m) && return RevealRank(parse(Int, m[:target]), parse(Int, m[:rank]))
+    !(m === nothing) && return RevealRank(parse(Int, m[:target]), parse(Int, m[:rank]))
     return nothing
 end
 
