@@ -24,7 +24,9 @@ get_state(obs::Observation) = obs.state
 get_legal_actions(obs::Observation) = obs.meta.legal_actions
 
 # !!! >= julia v1.3
-(env::AbstractEnv)(a) = interact!(env, a)
+if VERSION >= v"1.3.0-rc1.0"
+    (env::AbstractEnv)(a) = interact!(env, a)
+end
 
 action_space(env::AbstractEnv) = env.action_space
 observation_space(env::AbstractEnv) = env.observation_space
