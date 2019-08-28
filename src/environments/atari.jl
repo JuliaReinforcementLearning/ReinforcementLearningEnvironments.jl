@@ -68,6 +68,7 @@ function reset!(env::AtariEnv)
     reset_game(env.ale)
     for _ in 1:rand(0:env.noopmax) act(env.ale, Int32(0)) end
     env.getscreen!(env.ale, env.screen)
+    env.reward = 0.0f0  # dummy
     nothing
 end
 
