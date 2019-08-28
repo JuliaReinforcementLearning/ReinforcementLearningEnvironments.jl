@@ -54,17 +54,15 @@ end
 
 function interact!(env::AtariEnv, a)
     env.reward = act(env.ale, env.actions[a])
+    env.getscreen!(env.ale, env.screen)
     nothing
 end
 
-function observe(env::AtariEnv)
-    env.getscreen!(env.ale, env.screen)
-    Observation(
-        reward = env.reward,
-        terminal = game_over(env.ale),
-        state = env.screen
-    )
-end
+observe(env::AtariEnv) = Observation(
+    reward = env.reward,
+    terminal = game_over(env.ale),
+    state = env.screen
+)
 
 function reset!(env::AtariEnv)
     reset_game(env.ale)
