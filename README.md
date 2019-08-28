@@ -7,7 +7,7 @@ This package serves as a one-stop place for different kinds of reinforcement lea
 Install:
 
 ```julia
-(v1.1) pkg> add https://github.com/JuliaReinforcementLearning/ReinforcementLearningEnvironments.jl
+pkg> add ReinforcementLearningEnvironments
 ```
 
 ## API
