@@ -1,8 +1,8 @@
-using ArcadeLearningEnvironment, GR
+using ArcadeLearningEnvironment, GR, Random
 
 export AtariEnv
 
-mutable struct AtariEnv{IsGrayScale, TerminalOnLifeLoss, N} <: AbstractEnv
+mutable struct AtariEnv{IsGrayScale, TerminalOnLifeLoss, N, S<:AbstractRNG} <: AbstractEnv
     ale::Ptr{Nothing}
     screens::Tuple{Array{UInt8, N}, Array{UInt8, N}}  # for max-pooling
     actions::Vector{Int64}
@@ -12,6 +12,7 @@ mutable struct AtariEnv{IsGrayScale, TerminalOnLifeLoss, N} <: AbstractEnv
     frame_skip::Int
     reward::Float32
     lives::Int
+    seed::S
 end
 
 """
@@ -44,12 +45,22 @@ function AtariEnv(
     repeat_action_probability=0.,
     color_averaging=false,
     max_num_frames_per_episode=0,
-    full_action_space=false
+    full_action_space=false,
+    seed=nothing
 )
     frame_skip > 0 || throw(ArgumentError("frame_skip must be greater than 0!"))
     name in getROMList() || throw(ArgumentError("unknown ROM name! run `getROMList()` to see all the game names."))
 
+    if isnothing(seed)
+        seed = (MersenneTwister(), 0)
+    elseif seed isa Tuple{Int, Int}
+        seed = (MersenneTwister(seed[1]), seed[2])
+    else
+        @error "You must specify two seeds, one for Julia wrapper, one for internal C implementation" # ??? maybe auto generate two seed from one
+    end
+
     ale = ALE_new()
+    setInt(ale, "random_seed", seed[2])
     setInt(ale, "frame_skip", Int32(1))  # !!! do not use internal frame_skip here, we need to apply max-pooling for the latest two frames, so we need to manually implement the mechanism.
     setInt(ale, "max_num_frames_per_episode", max_num_frames_per_episode)
     setFloat(ale, "repeat_action_probability", Float32(repeat_action_probability))
@@ -69,7 +80,7 @@ function AtariEnv(
         fill(typemin(Cuchar), observation_size),
     )
 
-    AtariEnv{grayscale_obs, terminal_on_life_loss, grayscale_obs ? 2 : 3}(
+    AtariEnv{grayscale_obs, terminal_on_life_loss, grayscale_obs ? 2 : 3, typeof(seed[1])}(
         ale,
         screens,
         actions,
@@ -79,6 +90,7 @@ function AtariEnv(
         frame_skip,
         0.0f0,
         lives(ale),
+        seed[1]
     )
 end
 
@@ -113,7 +125,7 @@ observe(env::AtariEnv) = Observation(reward = env.reward, terminal = is_terminal
 
 function reset!(env::AtariEnv)
     reset_game(env.ale)
-    for _ = 1:rand(0:env.noopmax)
+    for _ = 1:rand(env.seed, 0:env.noopmax)
         act(env.ale, Int32(0))
     end
     update_screen!(env, env.screens[1])  # no need to update env.screens[2]
