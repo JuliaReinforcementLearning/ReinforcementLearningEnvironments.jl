@@ -35,4 +35,5 @@ function observe(env::MultiThreadEnv{O, E}) where {O, E}
             obs[i] = o
         end
     end
+    obs
 end
