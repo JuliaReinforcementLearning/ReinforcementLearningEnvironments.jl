@@ -2,24 +2,25 @@ export MultiContinuousSpace
 using Distributions: Uniform
 using Random: AbstractRNG
 
-struct MultiContinuousSpace{S,N} <: AbstractDiscreteSpace
-    low::Array{Float64,N}
-    high::Array{Float64,N}
-    function MultiContinuousSpace(low::Array{Float64}, high::Array{Float64})
-        size(low) == size(high) || throw(ArgumentError("$(size(low)) != $(size(high)), size must match"))
-        all(l < h for (l, h) in zip(
-            low,
-            high,
-        )) || throw(ArgumentError("each element of $low must be less than $high"))
-        new{size(low),ndims(low)}(low, high)
-    end
+struct MultiContinuousSpace{S, N, Fl<:AbstractFloat, AFl<:AbstractArray{Fl,N}} <: AbstractDiscreteSpace
+    low::AFl
+    high::AFl
 end
 
-MultiContinuousSpace(low, high) =
-    MultiContinuousSpace(convert(Array{Float64}, low), convert(Array{Float64}, high))
+function MultiContinuousSpace(low::AFl, high::AFl) where {Fl <: AbstractFloat, AFl <: AbstractArray{Fl}}
+  size(low) == size(high) || throw(ArgumentError("$(size(low)) != $(size(high)), size must match"))
+  all(l < h for (l, h) in zip(
+      low,
+      high,
+  )) || throw(ArgumentError("each element of $low must be less than $high"))
+  MultiContinuousSpace{size(low),Fl,ndims(low),AFl}(low, high)
+end
 
-Base.eltype(::MultiContinuousSpace{S,N}) where {S,N} = Array{Float64,N}
-Base.in(xs, s::MultiContinuousSpace{S,N}) where {S,N} =
+MultiContinuousSpace(low, high; float_type = Float64) =
+    MultiContinuousSpace(convert(Array{float_type}, low), convert(Array{float_type}, high))
+
+Base.eltype(::MultiContinuousSpace{S,N,Fl}) where {S,Fl,N} = Array{Fl,N}
+Base.in(xs, s::MultiContinuousSpace) =
     size(xs) == S && all(l <= x <= h for (l, x, h) in zip(s.low, xs, s.high))
 Base.:(==)(s1::MultiContinuousSpace, s2::MultiContinuousSpace) =
     s1.low == s2.low && s1.high == s2.high
