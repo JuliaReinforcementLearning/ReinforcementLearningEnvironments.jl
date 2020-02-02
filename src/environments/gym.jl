@@ -40,23 +40,23 @@ function GymEnv(name::String)
     env
 end
 
-function interact!(env::GymEnv{T}, action) where {T}
+function (env::GymEnv{T})(action) where {T}
     pycall!(env.state, env.pyenv.step, PyObject, action)
     nothing
 end
 
-function reset!(env::GymEnv)
+function RLBase.reset!(env::GymEnv)
     pycall!(env.state, env.pyenv.reset, PyObject)
     nothing
 end
 
-function observe(env::GymEnv{T}) where {T}
+function RLBase.observe(env::GymEnv{T}) where {T}
     if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type)
         obs, reward, isdone, info = convert(Tuple{T,Float64,Bool,PyDict}, env.state)
-        Observation(reward = reward, terminal = isdone, state = obs)
+        (reward = reward, terminal = isdone, state = obs)
     else
         # env has just been reseted
-        Observation(
+        (
             reward = 0.,  # dummy
             terminal = false,
             state = convert(T, env.state),
@@ -64,7 +64,7 @@ function observe(env::GymEnv{T}) where {T}
     end
 end
 
-render(env::GymEnv) = env.pyenv.render()
+RLBase.render(env::GymEnv) = env.pyenv.render()
 
 ###
 ### utils
