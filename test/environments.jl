@@ -32,22 +32,11 @@
     atari_env_names = filter(x -> x != "defender", atari_env_names)
 
     for env_exp in [
-        # :(HanabiEnv()),
         # :(basic_ViZDoom_env()),  # comment out due to https://github.com/JuliaReinforcementLearning/ViZDoom.jl/issues/7
+        :(POMDPEnv(TigerPOMDP())),
         :(MountainCarEnv()),
         :(ContinuousMountainCarEnv()),
         :(PendulumEnv()),
-        # :(MDPEnv(LegacyGridWorld())),
-        # :(POMDPEnv(TigerPOMDP())),
-        # :(SimpleMDPEnv()),
-        # :(DiscreteMazeEnv()),
-        # :(deterministic_MDP()),
-        # :(absorbing_deterministic_tree_MDP()),
-        # :(stochastic_MDP()),
-        # :(stochastic_tree_MDP()),
-        # :(deterministic_tree_MDP_with_rand_reward()),
-        # :(deterministic_tree_MDP()),
-        # :(deterministic_MDP()),
         (:(AtariEnv(;name=$x)) for x in atari_env_names)...,
         (:(GymEnv($x)) for x in gym_env_names)...,
     ]
