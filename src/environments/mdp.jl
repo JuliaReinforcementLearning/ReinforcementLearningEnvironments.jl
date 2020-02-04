@@ -3,6 +3,8 @@ export POMDPEnv
 using POMDPs
 using Random
 
+RLBase.get_action_space(m::Union{<:POMDP, <:MDP}) = convert(AbstractSpace, actions(m))
+
 #####
 # POMDPEnv
 #####

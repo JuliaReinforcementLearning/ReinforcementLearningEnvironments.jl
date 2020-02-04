@@ -6,7 +6,7 @@ mutable struct AtariEnv{IsGrayScale, TerminalOnLifeLoss, N, S<:AbstractRNG} <: A
     ale::Ptr{Nothing}
     screens::Tuple{Array{UInt8, N}, Array{UInt8, N}}  # for max-pooling
     actions::Vector{Int64}
-    action_space::DiscreteSpace{Int}
+    action_space::DiscreteSpace{UnitRange{Int}}
     observation_space::MultiDiscreteSpace{Array{UInt8, N}}
     noopmax::Int
     frame_skip::Int
@@ -69,8 +69,8 @@ function AtariEnv(
 
     observation_size = grayscale_obs ? (getScreenWidth(ale), getScreenHeight(ale)) : (3, getScreenWidth(ale), getScreenHeight(ale))  # !!! note the order
     observation_space = MultiDiscreteSpace(
-        fill(typemax(Cuchar), observation_size),
         fill(typemin(Cuchar), observation_size),
+        fill(typemax(Cuchar), observation_size),
     )
 
     actions = full_action_space ? getLegalActionSet(ale) : getMinimalActionSet(ale)

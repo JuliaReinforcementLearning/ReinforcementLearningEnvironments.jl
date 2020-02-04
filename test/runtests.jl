@@ -7,8 +7,7 @@ using PyCall
 using POMDPs
 using POMDPModels
 
-RLBase.get_observation_space(m::TigerPOMDP) = DiscreteSpace(1, 0)
-RLBase.get_action_space(m::TigerPOMDP) = DiscreteSpace(2, 0)
+RLBase.get_observation_space(m::TigerPOMDP) = DiscreteSpace((false, true))
 
 @testset "ReinforcementLearningEnvironments" begin
 
