@@ -1,12 +1,11 @@
 module ReinforcementLearningEnvironments
 
+using ReinforcementLearningBase
+
 export RLEnvs
 const RLEnvs = ReinforcementLearningEnvironments
 
-using Reexport
 using Requires
-@reexport using ReinforcementLearningBase
-using ReinforcementLearningCore
 
 # built-in environments
 include("environments/classic_control/classic_control.jl")
