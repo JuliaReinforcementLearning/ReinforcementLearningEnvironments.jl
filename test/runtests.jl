@@ -1,4 +1,5 @@
 using Test
+using ReinforcementLearningBase
 using ReinforcementLearningEnvironments
 using ArcadeLearningEnvironment
 using PyCall
