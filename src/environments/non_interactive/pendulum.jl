@@ -69,8 +69,8 @@ function (env::PendulumNonInteractiveEnv{Fl})(a::Nothing) where Fl
   p_theta -= (dt/2) * m*g*l*sin(theta)
   theta += dt * p_theta/(m*l^2)
   p_theta -= (dt/2) * m*g*l*sin(theta)
-
-  theta %= 2*Fl(pi)
+  
+  theta = mod(theta, 2*Fl(pi))
 
   env.t += 1
   env.state .= (theta, p_theta)
