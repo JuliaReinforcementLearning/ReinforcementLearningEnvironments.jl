@@ -10,7 +10,20 @@ struct PendulumNonInteractiveEnvParams{Fl<:AbstractFloat}
   maximum_time :: Fl
 end
 
-mutable struct PendulumNonInteractiveEnv{Fl<:AbstractFloat, VFl<:AbstractVector{Fl}, R<:AbstractRNG} <: NonInteractiveEnv
+
+"""
+A non-interactive pendulum environment.
+
+Accepts only `nothing` actions, which result in the system being simulated for one time step.
+Sets `env.done` to `true` once `maximum_time` is reached. Resets to a random position and momentum.
+
+Useful for debugging and development purposes, particularly in model-based reinforcement learning.
+"""
+mutable struct PendulumNonInteractiveEnv{
+    Fl<:AbstractFloat, 
+    VFl<:AbstractVector{Fl}, 
+    R<:AbstractRNG
+  } <: NonInteractiveEnv
   parameters        :: PendulumNonInteractiveEnvParams{Fl}
   action_space      :: EmptySpace
   observation_space :: MultiContinuousSpace{VFl}
