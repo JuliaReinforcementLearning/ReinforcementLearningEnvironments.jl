@@ -1,13 +1,16 @@
+module AtariWrapper
+
 using ArcadeLearningEnvironment, GR, Random
+using ReinforcementLearningBase
 
 export AtariEnv
 
-mutable struct AtariEnv{IsGrayScale, TerminalOnLifeLoss, N, S<:AbstractRNG} <: AbstractEnv
+mutable struct AtariEnv{IsGrayScale,TerminalOnLifeLoss,N,S<:AbstractRNG} <: AbstractEnv
     ale::Ptr{Nothing}
-    screens::Tuple{Array{UInt8, N}, Array{UInt8, N}}  # for max-pooling
+    screens::Tuple{Array{UInt8,N},Array{UInt8,N}}  # for max-pooling
     actions::Vector{Int64}
-    action_space::DiscreteSpace{Int}
-    observation_space::MultiDiscreteSpace{UInt8, N}
+    action_space::DiscreteSpace{UnitRange{Int}}
+    observation_space::MultiDiscreteSpace{Array{UInt8,N}}
     noopmax::Int
     frame_skip::Int
     reward::Float32
@@ -36,24 +39,25 @@ TODO: support seed! in single/multi thread
 
 See also the [python implementation](https://github.com/openai/gym/blob/c072172d64bdcd74313d97395436c592dc836d5c/gym/wrappers/atari_preprocessing.py#L8-L36)
 """
-function AtariEnv(
-    ;name = "pong",
-    grayscale_obs=true,
+function AtariEnv(;
+    name = "pong",
+    grayscale_obs = true,
     noop_max = 30,
     frame_skip = 4,
-    terminal_on_life_loss=false,
-    repeat_action_probability=0.,
-    color_averaging=false,
-    max_num_frames_per_episode=0,
-    full_action_space=false,
-    seed=nothing
+    terminal_on_life_loss = false,
+    repeat_action_probability = 0.0,
+    color_averaging = false,
+    max_num_frames_per_episode = 0,
+    full_action_space = false,
+    seed = nothing,
 )
     frame_skip > 0 || throw(ArgumentError("frame_skip must be greater than 0!"))
-    name in getROMList() || throw(ArgumentError("unknown ROM name! run `getROMList()` to see all the game names."))
+    name in getROMList() ||
+    throw(ArgumentError("unknown ROM name! run `getROMList()` to see all the game names."))
 
     if isnothing(seed)
         seed = (MersenneTwister(), 0)
-    elseif seed isa Tuple{Int, Int}
+    elseif seed isa Tuple{Int,Int}
         seed = (MersenneTwister(seed[1]), seed[2])
     else
         @error "You must specify two seeds, one for Julia wrapper, one for internal C implementation" # ??? maybe auto generate two seed from one
@@ -67,20 +71,19 @@ function AtariEnv(
     setBool(ale, "color_averaging", color_averaging)
     loadROM(ale, name)
 
-    observation_size = grayscale_obs ? (getScreenWidth(ale), getScreenHeight(ale)) : (3, getScreenWidth(ale), getScreenHeight(ale))  # !!! note the order
+    observation_size = grayscale_obs ? (getScreenWidth(ale), getScreenHeight(ale)) :
+        (3, getScreenWidth(ale), getScreenHeight(ale))  # !!! note the order
     observation_space = MultiDiscreteSpace(
-        fill(typemax(Cuchar), observation_size),
         fill(typemin(Cuchar), observation_size),
+        fill(typemax(Cuchar), observation_size),
     )
 
     actions = full_action_space ? getLegalActionSet(ale) : getMinimalActionSet(ale)
     action_space = DiscreteSpace(length(actions))
-    screens = (
-        fill(typemin(Cuchar), observation_size),
-        fill(typemin(Cuchar), observation_size),
-    )
+    screens =
+        (fill(typemin(Cuchar), observation_size), fill(typemin(Cuchar), observation_size))
 
-    AtariEnv{grayscale_obs, terminal_on_life_loss, grayscale_obs ? 2 : 3, typeof(seed[1])}(
+    AtariEnv{grayscale_obs,terminal_on_life_loss,grayscale_obs ? 2 : 3,typeof(seed[1])}(
         ale,
         screens,
         actions,
@@ -90,14 +93,18 @@ function AtariEnv(
         frame_skip,
         0.0f0,
         lives(ale),
-        seed[1]
+        seed[1],
     )
 end
 
-update_screen!(env::AtariEnv{true}, screen) = ArcadeLearningEnvironment.getScreenGrayscale!(env.ale, vec(screen))
-update_screen!(env::AtariEnv{false}, screen) = ArcadeLearningEnvironment.getScreenRGB!(env.ale, vec(screen))
+update_screen!(env::AtariEnv{true}, screen) =
+    ArcadeLearningEnvironment.getScreenGrayscale!(env.ale, vec(screen))
+update_screen!(env::AtariEnv{false}, screen) =
+    ArcadeLearningEnvironment.getScreenRGB!(env.ale, vec(screen))
 
-function interact!(env::AtariEnv{is_gray_scale, is_terminal_on_life_loss}, a) where {is_gray_scale, is_terminal_on_life_loss}
+function (env::AtariEnv{is_gray_scale,is_terminal_on_life_loss})(
+    a,
+) where {is_gray_scale,is_terminal_on_life_loss}
     r = 0.0f0
 
     for i in 1:env.frame_skip
@@ -118,14 +125,15 @@ function interact!(env::AtariEnv{is_gray_scale, is_terminal_on_life_loss}, a) wh
     nothing
 end
 
-is_terminal(env::AtariEnv{<:Any, true}) = game_over(env.ale) || (lives(env.ale) < env.lives)
-is_terminal(env::AtariEnv{<:Any, false}) = game_over(env.ale)
+is_terminal(env::AtariEnv{<:Any,true}) = game_over(env.ale) || (lives(env.ale) < env.lives)
+is_terminal(env::AtariEnv{<:Any,false}) = game_over(env.ale)
 
-observe(env::AtariEnv) = Observation(reward = env.reward, terminal = is_terminal(env), state = env.screens[1])
+RLBase.observe(env::AtariEnv) =
+    (reward = env.reward, terminal = is_terminal(env), state = env.screens[1])
 
-function reset!(env::AtariEnv)
+function RLBase.reset!(env::AtariEnv)
     reset_game(env.ale)
-    for _ = 1:rand(env.seed, 0:env.noopmax)
+    for _ in 1:rand(env.seed, 0:env.noopmax)
         act(env.ale, Int32(0))
     end
     update_screen!(env, env.screens[1])  # no need to update env.screens[2]
@@ -145,16 +153,21 @@ function imshowcolor(x::Array{UInt8,1}, dims)
     setwindow(0, 1, 0, 1)
     y = (zeros(UInt32, dims...) .+ 0xff) .<< 24
     img = UInt32.(x)
-    @simd for i = 1:length(y)
+    @simd for i in 1:length(y)
         @inbounds y[i] += img[3*(i-1)+1] + img[3*(i-1)+2] << 8 + img[3*i] << 16
     end
     drawimage(0, 1, 0, 1, dims..., y)
     updatews()
 end
 
-function render(env::AtariEnv)
+function RLBase.render(env::AtariEnv)
     x = getScreenRGB(env.ale)
     imshowcolor(x, (Int(getScreenWidth(env.ale)), Int(getScreenHeight(env.ale))))
 end
 
 list_atari_rom_names() = getROMList()
+
+end
+
+using .AtariWrapper
+export AtariEnv
