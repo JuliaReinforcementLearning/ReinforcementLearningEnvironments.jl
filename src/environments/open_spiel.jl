@@ -55,7 +55,11 @@ function OpenSpielEnv(name; seed = nothing, observation_type = nothing, kwargs..
 
     state = new_initial_state(game)
 
-    rng = MersenneTwister(seed)
+    if chance_mode(game_type) === OpenSpiel.DETERMINISTIC
+        rng = nothing
+    else
+        rng = MersenneTwister(seed)
+    end
 
     env =
         OpenSpielEnv{observation_type,dynamic_style,typeof(state),typeof(game),typeof(rng)}(
@@ -67,11 +71,13 @@ function OpenSpielEnv(name; seed = nothing, observation_type = nothing, kwargs..
     env
 end
 
+Base.show(io::IO, env::OpenSpielEnv) = show(io, env.state)
+
 RLBase.DynamicStyle(env::OpenSpielEnv{O,D}) where {O,D} = D
 
 function RLBase.reset!(env::OpenSpielEnv)
     state = new_initial_state(env.game)
-    _sample_external_events!(env.rng, state)
+    isnothing(env.rng) || _sample_external_events!(env.rng, state)
     env.state = state
 end
 
