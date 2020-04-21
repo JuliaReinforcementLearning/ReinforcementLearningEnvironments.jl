@@ -30,17 +30,17 @@ function OpenSpielEnv(name; seed = nothing, observation_type = nothing, kwargs..
     has_info_state = provides_information_state_tensor(game_type)
     has_obs_state = provides_observation_tensor(game_type)
     has_info_state ||
-    has_obs_state ||
-    @error "the environment neither provides information tensor nor provides observation tensor"
+        has_obs_state ||
+        @error "the environment neither provides information tensor nor provides observation tensor"
     if isnothing(observation_type)
         observation_type = has_info_state ? :information : :observation
     end
     if observation_type == :observation
         has_obs_state ||
-        @error "the environment doesn't support observation_type of $observation_type"
+            @error "the environment doesn't support observation_type of $observation_type"
     elseif observation_type == :information
         has_info_state ||
-        @error "the environment doesn't support observation_type of $observation_type"
+            @error "the environment doesn't support observation_type of $observation_type"
     else
         @error "unknown observation_type $observation_type"
     end
