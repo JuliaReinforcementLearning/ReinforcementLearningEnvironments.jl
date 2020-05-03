@@ -72,15 +72,18 @@ function OpenSpielEnv(name; seed = nothing, observation_type = nothing, kwargs..
     env
 end
 
+Base.copy(env::OpenSpielEnv{O,D,S,G,R}) where {O,D,S,G,R} = OpenSpielEnv{O,D,S,G,R}(copy(env.state), env.game, env.rng)
 Base.show(io::IO, env::OpenSpielEnv) = show(io, env.state)
 
 RLBase.DynamicStyle(env::OpenSpielEnv{O,D}) where {O,D} = D
 
 function RLBase.reset!(env::OpenSpielEnv)
     state = new_initial_state(env.game)
-    isnothing(env.rng) || _sample_external_events!(env.rng, state)
+    _sample_external_events!(env.rng, state)
     env.state = state
 end
+
+_sample_external_events!(::Nothing, state) = nothing
 
 function _sample_external_events!(rng::AbstractRNG, state)
     while is_chance_node(state)
@@ -110,13 +113,12 @@ end
 (env::OpenSpielEnv)(::Simultaneous, player, action) =
     @error "Simultaneous environments can not take in the actions from players seperately"
 
-struct OpenSpielObs{O,D,S,P}
+struct OpenSpielObs{O,D,S}
     state::S
-    player::P
+    player::Int32
 end
 
-RLBase.observe(env::OpenSpielEnv{O,D,S}, player::P) where {O,D,S,P} =
-    OpenSpielObs{O,D,S,P}(env.state, player)
+RLBase.observe(env::OpenSpielEnv{O,D,S}, player) where {O,D,S} = OpenSpielObs{O,D,S}(env.state, player)
 
 RLBase.get_action_space(env::OpenSpielEnv) =
     DiscreteSpace(0:num_distinct_actions(env.game)-1)
@@ -132,6 +134,7 @@ function RLBase.get_observation_space(env::OpenSpielEnv{:observation})
 end
 
 RLBase.get_current_player(env::OpenSpielEnv) = current_player(env.state)
+RLBase.get_player_id(env::OpenSpielEnv) = get_current_player(env) + 1
 
 RLBase.get_num_players(env::OpenSpielEnv) = num_players(env.game)
 
@@ -145,7 +148,8 @@ RLBase.get_legal_actions_mask(obs::OpenSpielObs) = legal_actions_mask(obs.state,
 
 RLBase.get_terminal(obs::OpenSpielObs) = OpenSpiel.is_terminal(obs.state)
 
-RLBase.get_reward(obs::OpenSpielObs) = rewards(obs.state)[obs.player+1]  # player starts with 0
+RLBase.get_reward(obs::OpenSpielObs) = player_reward(obs.state, obs.player)
+RLBase.get_reward(env::OpenSpielEnv) = rewards(env.state)
 
 RLBase.get_state(obs::OpenSpielObs{:information}) =
     information_state_tensor(obs.state, obs.player)
@@ -153,7 +157,9 @@ RLBase.get_state(obs::OpenSpielObs{:information}) =
 RLBase.get_state(obs::OpenSpielObs{:observation}) =
     observation_tensor(obs.state, obs.player)
 
-RLBase.get_invalid_action(obs::OpenSpielObs) = convert(Int, OpenSpiel.INVALID_ACTION[])
+# forward some handy functions from OpenSpiel
+OpenSpiel.history(obs::OpenSpielObs) = history(obs.state)
+OpenSpiel.history(env::OpenSpielEnv) = history(env.state)
 
 end
 
