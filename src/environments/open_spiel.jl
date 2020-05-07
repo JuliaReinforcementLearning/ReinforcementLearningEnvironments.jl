@@ -157,9 +157,8 @@ RLBase.get_state(obs::OpenSpielObs{:information}) =
 RLBase.get_state(obs::OpenSpielObs{:observation}) =
     observation_tensor(obs.state, obs.player)
 
-# forward some handy functions from OpenSpiel
-OpenSpiel.history(obs::OpenSpielObs) = history(obs.state)
-OpenSpiel.history(env::OpenSpielEnv) = history(env.state)
+RLBase.get_history(obs::OpenSpielObs) = history(obs.state)
+RLBase.get_history(env::OpenSpielEnv) = history(env.state)
 
 end
 
