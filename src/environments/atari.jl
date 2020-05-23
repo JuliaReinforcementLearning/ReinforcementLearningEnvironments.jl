@@ -95,8 +95,8 @@ function AtariEnv(;
         lives(ale),
         seed[1],
     )
-    finalizer(env) do
-        ALE_del(env.ale)
+    finalizer(env) do x
+        ALE_del(x.ale)
     end
     env
 end
