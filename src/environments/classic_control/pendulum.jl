@@ -26,7 +26,7 @@ mutable struct PendulumEnv{A,T,R<:AbstractRNG} <: AbstractEnv
 end
 
 """
-    PwendulumEnv(;kwargs...)
+    PendulumEnv(;kwargs...)
 
 # Keyword arguments
 
@@ -38,6 +38,8 @@ end
 - `l = T(1)`
 - `dt = T(0.05)`
 - `max_steps = 200`
+- `continuous::Bool = true`
+- `n_actions::Int = 3`
 - `seed = nothing`
 """
 function PendulumEnv(;
@@ -49,9 +51,9 @@ function PendulumEnv(;
     l = T(1),
     dt = T(0.05),
     max_steps = 200,
-    seed = nothing,
     continuous::Bool = true,
     n_actions::Int = 3,
+    seed = nothing,
 )
     high = T.([1, 1, max_speed])
     action_space = continuous ? ContinuousSpace(-2.0, 2.0) : DiscreteSpace(n_actions)
