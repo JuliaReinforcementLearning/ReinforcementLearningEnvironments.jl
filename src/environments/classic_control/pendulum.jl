@@ -108,7 +108,6 @@ function _step!(env::PendulumEnv, a)
     th, thdot = env.state
     a = clamp(a, -env.params.max_torque, env.params.max_torque)
     costs = angle_normalize(th)^2 + 0.1 * thdot^2 + 0.001 * a^2
-    a = clamp(a, -env.params.max_torque, env.params.max_torque)
     newthdot =
         thdot +
         (
