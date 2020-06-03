@@ -79,9 +79,9 @@ function MountainCarEnv(; T = Float64, continuous = false, seed = nothing, kwarg
             [params.max_pos, params.max_speed],
         ),
         zeros(T, 2),
-        1,
-        false,
         rand(action_space),
+        false,
+        0,
         MersenneTwister(seed),
     )
     reset!(env)
