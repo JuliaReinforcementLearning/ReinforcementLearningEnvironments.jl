@@ -1,6 +1,6 @@
 module ReinforcementLearningEnvironments
 
-using ReinforcementLearningBase
+using ReinforcementLearningBase, GR
 
 export RLEnvs
 const RLEnvs = ReinforcementLearningEnvironments
