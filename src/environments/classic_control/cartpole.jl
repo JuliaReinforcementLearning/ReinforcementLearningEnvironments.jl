@@ -1,5 +1,3 @@
-using Random
-
 export CartPoleEnv
 
 struct CartPoleEnvParams{T}
