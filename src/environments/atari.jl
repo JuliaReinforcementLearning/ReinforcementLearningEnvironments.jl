@@ -132,10 +132,10 @@ function RLBase.reset!(env::AtariEnv)
 end
 
 
-imshowgrey(x::Array{UInt8,2}) = imshowgrey(reshape(x, :), size(x))
+imshowgrey(x::AbstractArray{UInt8,2}) = imshowgrey(reshape(x, :), size(x))
 imshowgrey(x::AbstractArray{UInt8,1}, dims) = imshow(reshape(x, dims), colormap = 2)
-imshowcolor(x::Array{UInt8,3}) = imshowcolor(reshape(x, :), size(x))
-function imshowcolor(x::Array{UInt8,1}, dims)
+imshowcolor(x::AbstractArray{UInt8,3}) = imshowcolor(reshape(x, :), size(x))
+function imshowcolor(x::AbstractArray{UInt8,1}, dims)
     clearws()
     setviewport(0, dims[1] / dims[2], 0, 1)
     setwindow(0, 1, 0, 1)
