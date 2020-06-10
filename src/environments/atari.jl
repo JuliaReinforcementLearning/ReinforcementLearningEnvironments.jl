@@ -133,7 +133,7 @@ end
 
 
 imshowgrey(x::Array{UInt8,2}) = imshowgrey(reshape(x, :), size(x))
-imshowgrey(x::Array{UInt8,1}, dims) = imshow(reshape(x, dims), colormap = 2)
+imshowgrey(x::AbstractArray{UInt8,1}, dims) = imshow(reshape(x, dims), colormap = 2)
 imshowcolor(x::Array{UInt8,3}) = imshowcolor(reshape(x, :), size(x))
 function imshowcolor(x::Array{UInt8,1}, dims)
     clearws()
