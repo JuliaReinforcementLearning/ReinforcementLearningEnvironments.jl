@@ -39,7 +39,7 @@ mutable struct MDPEnv{M,S,I,R,RNG<:AbstractRNG} <: AbstractEnv
 end
 export MDPEnv
 
-mutable struct OpenSpielEnv{O,D,S,G,R} <: AbstractEnv
+mutable struct OpenSpielEnv{O,D,S,G,R,C} <: AbstractEnv
     state::S
     game::G
     rng::R

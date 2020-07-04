@@ -7,7 +7,6 @@
     ]
         env = OpenSpielEnv(name, seed = 123)
         get_current_player(env)
-        get_num_players(env)
         get_observation_space(env)
         get_action_space(env)
         DynamicStyle(env)
