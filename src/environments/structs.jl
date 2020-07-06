@@ -45,8 +45,3 @@ mutable struct OpenSpielEnv{O,D,S,G,R,C} <: AbstractEnv
     rng::R
 end
 export OpenSpielEnv
-
-struct OpenSpielObs{O,D,S}
-    state::S
-    player::Int32
-end

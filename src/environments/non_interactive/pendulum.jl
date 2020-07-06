@@ -80,9 +80,10 @@ end
 
 Random.seed!(env::PendulumNonInteractiveEnv, seed) = Random.seed!(env.rng, seed)
 
-function RLBase.observe(env::PendulumNonInteractiveEnv)
-    (reward = 0, terminal = env.done, state = env.state)
-end
+RLBase.get_actions(env::PendulumNonInteractiveEnv) = env.action_space
+RLBase.get_reward(env::PendulumNonInteractiveEnv) = 0
+RLBase.get_terminal(env::PendulumNonInteractiveEnv) = env.done
+RLBase.get_state(env::PendulumNonInteractiveEnv) = env.state
 
 function RLBase.reset!(env::PendulumNonInteractiveEnv{Fl}) where {Fl}
     env.state .= (Fl(2 * pi) * rand(env.rng, Fl), randn(env.rng, Fl))

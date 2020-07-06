@@ -33,7 +33,7 @@ By default, only some basic environments are installed. If you want to use some 
 | `AtariEnv` | [ArcadeLearningEnvironment.jl](https://github.com/JuliaReinforcementLearning/ArcadeLearningEnvironment.jl) | Tested only on Linux|
 | `ViZDoomEnv` | [ViZDoom.jl](https://github.com/JuliaReinforcementLearning/ViZDoom.jl) | Currently only a basic environment is supported. (By calling `basic_ViZDoom_env()`)|
 | `GymEnv` | [PyCall.jl](https://github.com/JuliaPy/PyCall.jl) | Tested only on Linux |
-| `MDPEnv`,`POMDPEnv`| [POMDPs.jl](https://github.com/JuliaPOMDP/POMDPs.jl)| The `get_observation_space` method is undefined|
+| `MDPEnv`,`POMDPEnv`| [POMDPs.jl](https://github.com/JuliaPOMDP/POMDPs.jl)||
 | `OpenSpielEnv` | [OpenSpiel.jl](https://github.com/JuliaReinforcementLearning/OpenSpiel.jl) | |
 
 ## Usage
@@ -46,7 +46,7 @@ julia> using ReinforcementLearningBase
 julia> env = CartPoleEnv()
 CartPoleEnv{Float64}(gravity=9.8,masscart=1.0,masspole=0.1,totalmass=1.1,halflength=0.5,polemasslength=0.05,forcemag=10.0,tau=0.02,thetathreshold=0.20943951023931953,xthreshold=2.4,max_steps=200)
 
-julia> action_space = get_action_space(env)
+julia> action_space = get_actions(env)
 DiscreteSpace{UnitRange{Int64}}(1:2)
 
 julia> while true

@@ -90,7 +90,6 @@ is_chance_agent_required(env::OpenSpielEnv{O,D,S,G,R,C}) where {O,D,S,G,R,C} = C
 Base.copy(env::OpenSpielEnv{O,D,S,G,R,C}) where {O,D,S,G,R,C} =
     OpenSpielEnv{O,D,S,G,R,C}(copy(env.state), env.game, env.rng)
 Base.show(io::IO, env::OpenSpielEnv) = show(io, env.state)
-Base.show(io::IO, obs::OpenSpielObs) = show(io, obs.state)
 
 RLBase.DynamicStyle(env::OpenSpielEnv{O,D}) where {O,D} = D
 
@@ -135,21 +134,8 @@ end
 (env::OpenSpielEnv)(::Simultaneous, player, action) =
     @error "Simultaneous environments can not take in the actions from players seperately"
 
-RLBase.observe(env::OpenSpielEnv{O,D,S}, player) where {O,D,S} =
-    OpenSpielObs{O,D,S}(env.state, player)
-
-RLBase.get_action_space(env::OpenSpielEnv) =
+RLBase.get_actions(env::OpenSpielEnv) =
     DiscreteSpace(0:num_distinct_actions(env.game)-1)
-
-function RLBase.get_observation_space(env::OpenSpielEnv{:information})
-    s = information_state_tensor_size(env.game)
-    MultiContinuousSpace(fill(typemin(Float64), s...), fill(typemax(Float64), s...))
-end
-
-function RLBase.get_observation_space(env::OpenSpielEnv{:observation})
-    s = observation_tensor_size(env.game)
-    MultiContinuousSpace(fill(typemin(Float64), s...), fill(typemax(Float64), s...))
-end
 
 RLBase.get_current_player(env::OpenSpielEnv) = current_player(env.state)
 RLBase.get_chance_player(env::OpenSpielEnv) = convert(Int, OpenSpiel.CHANCE_PLAYER)
@@ -157,43 +143,28 @@ RLBase.get_players(env::OpenSpielEnv) = 0:(num_players(env.game)-1)
 
 Random.seed!(env::OpenSpielEnv, seed) = Random.seed!(env.rng, seed)
 
-RLBase.ActionStyle(::OpenSpielObs) = FULL_ACTION_SET
+RLBase.ActionStyle(::OpenSpielEnv) = FULL_ACTION_SET
 
-RLBase.get_legal_actions(obs::OpenSpielObs) = legal_actions(obs.state, obs.player)
+RLBase.get_legal_actions(env::OpenSpielEnv, player) = legal_actions(env.state, player)
 
-RLBase.get_legal_actions_mask(obs::OpenSpielObs) = convert(Vector{Bool}, legal_actions_mask(obs.state, obs.player))
-
-RLBase.get_terminal(obs::OpenSpielObs) = OpenSpiel.is_terminal(obs.state)
-
-RLBase.get_reward(obs::OpenSpielObs) = player_reward(obs.state, obs.player)
-RLBase.get_reward(env::OpenSpielEnv) = rewards(env.state)
-
-function RLBase.get_state(obs::OpenSpielObs{:information})
-    if obs.player >=0
-        information_state_tensor(obs.state, obs.player)
+function RLBase.get_legal_actions_mask(env::OpenSpielEnv, player)
+    if DynamicStyle(env) === SIMULTANEOUS && player == convert(Int, OpenSpiel.SIMULTANEOUS_PLAYER)
+        ones(Bool, length(legal_actions(env.state, player)))
     else
-        # OpenSpiel doesn't allow getting information for chance nodes
-        nothing
+        convert(Vector{Bool}, legal_actions_mask(env.state, player))
     end
 end
 
-function RLBase.get_state_str(obs::OpenSpielObs{:information})
-    if obs.player >=0
-        information_state_string(obs.state, obs.player)
+RLBase.get_terminal(env::OpenSpielEnv) = OpenSpiel.is_terminal(env.state)
+
+function RLBase.get_reward(env::OpenSpielEnv, player)
+    if DynamicStyle(env) === SIMULTANEOUS && player == convert(Int, OpenSpiel.SIMULTANEOUS_PLAYER)
+        rewards(env.state)
     else
-        # OpenSpiel doesn't allow getting information for chance nodes
-        ""
+        player_reward(env.state, player)
     end
 end
 
-RLBase.get_state(obs::OpenSpielObs{:observation}) =
-    observation_tensor(obs.state, obs.player)
+RLBase.get_state(env::OpenSpielEnv) = env.state
 
-RLBase.get_state_str(obs::OpenSpielObs{:observation}) =
-    observation_string(obs.state, obs.player)
-
-RLBase.get_env_state(obs::OpenSpielObs) = obs.state
-RLBase.get_chance_outcome(obs::OpenSpielObs) = chance_outcomes(obs.state)
-RLBase.get_history(obs::OpenSpielObs) = history(obs.state)
-RLBase.get_history(obs::OpenSpielObs) = history(obs.state)
 RLBase.get_history(env::OpenSpielEnv) = history(env.state)

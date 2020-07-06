@@ -1,6 +1,6 @@
 using .POMDPs
 
-RLBase.get_action_space(m::Union{<:POMDP,<:MDP}) = convert(AbstractSpace, actions(m))
+RLBase.get_actions(m::Union{<:POMDP,<:MDP}) = convert(AbstractSpace, actions(m))
 
 #####
 # POMDPEnv
@@ -41,13 +41,9 @@ function (env::POMDPEnv)(a)
     nothing
 end
 
-RLBase.observe(env::POMDPEnv) = (
-    state = env.observation,
-    reward = env.reward,
-    terminal = isterminal(env.model, env.state),
-    inner_state = env.state,
-    info = env.info,
-)
+RLBase.get_state(env::POMDPEnv) = env.observation
+RLBase.get_reward(env::POMDPEnv) = env.reward
+RLBase.get_terminal(env::POMDPEnv) = isterminal(env.model, env.state)
 
 function RLBase.reset!(env::POMDPEnv)
     env.state = initialstate(env.model, env.rng)
@@ -55,8 +51,7 @@ function RLBase.reset!(env::POMDPEnv)
     nothing
 end
 
-RLBase.get_observation_space(env::POMDPEnv) = get_observation_space(env.model)
-RLBase.get_action_space(env::POMDPEnv) = get_action_space(env.model)
+RLBase.get_actions(env::POMDPEnv) = get_actions(env.model)
 
 #####
 # MDPEnv
@@ -95,17 +90,13 @@ function (env::MDPEnv)(a)
     nothing
 end
 
-RLBase.observe(env::MDPEnv) = (
-    state = env.state,
-    reward = env.reward,
-    terminal = isterminal(env.model, env.state),
-    info = env.info,
-)
+RLBase.get_state(env::MDPEnv) = env.state
+RLBase.get_reward(env::MDPEnv) = env.reward
+RLBase.get_terminal(env::MDPEnv) = isterminal(env.model, env.state)
 
 function RLBase.reset!(env::MDPEnv)
     env.state = initialstate(env.model, env.rng)
     nothing
 end
 
-RLBase.get_observation_space(env::MDPEnv) = get_observation_space(env.model)
-RLBase.get_action_space(env::MDPEnv) = get_action_space(env.model)
+RLBase.get_actions(env::MDPEnv) = get_actions(env.model)

@@ -96,8 +96,10 @@ function RLBase.reset!(env::CartPoleEnv{T}) where {T<:Number}
     nothing
 end
 
-RLBase.observe(env::CartPoleEnv{T}) where {T} =
-    (reward = env.done ? zero(T) : one(T), terminal = env.done, state = env.state)
+RLBase.get_actions(env::CartPoleEnv) = env.action_space
+RLBase.get_reward(env::CartPoleEnv{T}) where {T} = env.done ? zero(T) : one(T)
+RLBase.get_terminal(env::CartPoleEnv) = env.done
+RLBase.get_state(env::CartPoleEnv) = env.state
 
 function (env::CartPoleEnv)(a)
     @assert a in (1, 2)
@@ -136,7 +138,7 @@ function plotendofepisode(x, y, d)
     end
     return nothing
 end
-function RLBase.render(env::CartPoleEnv)
+function render(env::CartPoleEnv)
     s, a, d = env.state, env.action, env.done
     x, xdot, theta, thetadot = s
     l = 2 * env.params.halflength

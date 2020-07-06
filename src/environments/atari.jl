@@ -117,8 +117,10 @@ end
 is_terminal(env::AtariEnv{<:Any,true}) = game_over(env.ale) || (lives(env.ale) < env.lives)
 is_terminal(env::AtariEnv{<:Any,false}) = game_over(env.ale)
 
-RLBase.observe(env::AtariEnv) =
-    (reward = env.reward, terminal = is_terminal(env), state = env.screens[1])
+RLBase.get_actions(env::AtariEnv) = env.action_space
+RLBase.get_reward(env::AtariEnv) = env.reward
+RLBase.get_terminal(env::AtariEnv) = is_terminal(env)
+RLBase.get_state(env::AtariEnv) = env.screens[1]
 
 function RLBase.reset!(env::AtariEnv)
     reset_game(env.ale)
@@ -148,7 +150,7 @@ function imshowcolor(x::AbstractArray{UInt8,1}, dims)
     updatews()
 end
 
-function RLBase.render(env::AtariEnv)
+function render(env::AtariEnv)
     x = getScreenRGB(env.ale)
     imshowcolor(x, (Int(getScreenWidth(env.ale)), Int(getScreenHeight(env.ale))))
 end
