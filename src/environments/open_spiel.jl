@@ -7,6 +7,7 @@ import .OpenSpiel:
     new_initial_state,
     chance_mode,
     is_chance_node,
+    information,
     information_state_tensor,
     information_state_tensor_size,
     information_state_string,
@@ -18,11 +19,14 @@ import .OpenSpiel:
     legal_actions,
     legal_actions_mask,
     rewards,
+    reward_model,
     history,
     observation_tensor_size,
     observation_tensor,
     observation_string,
-    chance_outcomes
+    chance_mode,
+    chance_outcomes,
+    utility
 using StatsBase: sample, weights
 
 
@@ -48,6 +52,7 @@ function OpenSpielEnv(name; seed = nothing, state_type= nothing, is_chance_agent
     if isnothing(state_type)
         state_type= has_info_state ? :information : :observation
     end
+
     if state_type== :observation
         has_obs_state ||
             @error "the environment doesn't support state_typeof $state_type"
@@ -58,25 +63,41 @@ function OpenSpielEnv(name; seed = nothing, state_type= nothing, is_chance_agent
         @error "unknown state_type $state_type"
     end
 
-    d = dynamics(game_type)
-    dynamic_style = if d === OpenSpiel.SEQUENTIAL
-        RLBase.SEQUENTIAL
-    elseif d === OpenSpiel.SIMULTANEOUS
-        RLBase.SIMULTANEOUS
-    else
-        @error "unknown dynamic style of $d"
-    end
-
     state = new_initial_state(game)
 
-    if chance_mode(game_type) === OpenSpiel.DETERMINISTIC
-        rng = nothing
-    else
-        rng = MersenneTwister(seed)
+    c = if chance_mode(game_type) == OpenSpiel.DETERMINISTIC
+        RLBase.DETERMINISTIC
+    elseif is_chance_agent_required
+        if chance_mode(game_type) == OpenSpiel.EXPLICIT_STOCHASTIC
+            RLBase.EXPLICIT_STOCHASTIC
+        else
+            RLBase.SAMPLED_STOCHASTIC
+        end
+    else 
+        RLBase.STOCHASTIC
     end
 
-    env =
-        OpenSpielEnv{state_type,dynamic_style,typeof(state),typeof(game),typeof(rng),is_chance_agent_required}(
+    rng = c === RLBase.STOCHASTIC ? MersenneTwister(seed) : nothing
+
+    d = dynamics(game_type) == OpenSpiel.SEQUENTIAL ? RLBase.SEQUENTIAL : RLBase.SIMULTANEOUS
+
+    i = information(game_type) == OpenSpiel.PERFECT_INFORMATION ? RLBase.PERFECT_INFORMATION : RLBase.IMPERFECT_INFORMATION
+
+    n = MultiAgent(num_players(game))
+
+    r = reward_model(game_type) == OpenSpiel.REWARDS ? RLBase.STEP_REWARD : RLBase.TERMINAL_REWARD
+
+    u = if utility(game_type) == OpenSpiel.ZERO_SUM
+        RLBase.ZERO_SUM
+    elseif utility(game_type) == OpenSpiel.CONSTANT_SUM
+        RLBase.CONSTANT_SUM
+    elseif utility(game_type) == OpenSpiel.GENERAL_SUM
+        RLBase.GENERAL_SUM
+    elseif utility(game_type) == OpenSpiel.IDENTICAL_SUM
+        RLBase.IDENTICAL_SUM
+    end
+
+    env = OpenSpielEnv{state_type,Tuple{c, d, i, n, r, u}, typeof(state),typeof(game),typeof(rng)}(
             state,
             game,
             rng,
@@ -85,22 +106,35 @@ function OpenSpielEnv(name; seed = nothing, state_type= nothing, is_chance_agent
     env
 end
 
-is_chance_agent_required(env::OpenSpielEnv{O,D,S,G,R,C}) where {O,D,S,G,R,C} = C
+RLBase.ActionStyle(env::OpenSpielEnv) = FULL_ACTION_SET
+RLBase.ChanceStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = C
+RLBase.InformationStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = I
+RLBase.NumAgentStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = N
+RLBase.RewardStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = R
+RLBase.UtilityStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = U
 
-Base.copy(env::OpenSpielEnv{O,D,S,G,R,C}) where {O,D,S,G,R,C} =
-    OpenSpielEnv{O,D,S,G,R,C}(copy(env.state), env.game, env.rng)
-Base.show(io::IO, env::OpenSpielEnv) = show(io, env.state)
+Base.copy(env::OpenSpielEnv{S,T,ST,G,R}) where {S,T,ST,G,R} =
+    OpenSpielEnv{S,T,ST,G,R}(copy(env.state), env.game, env.rng)
 
-RLBase.DynamicStyle(env::OpenSpielEnv{O,D}) where {O,D} = D
+function Base.show(io::IO, env::OpenSpielEnv)
+    RLBase.print_traits(io, env)
+    println()
+    show(io, env.state)
+end
+
+function Base.show(io::IO, obs::Observation{OpenSpielEnv{:information}})
+    println(io, "observer: $(obs.player)")
+    show(io, information_state_string(obs.env.state))
+end
+
+function Base.show(io::IO, obs::Observation{OpenSpielEnv{:observation}})
+    println(io, "observer: $(obs.player)")
+    show(io, observation_string(obs.env.state))
+end
 
 function RLBase.reset!(env::OpenSpielEnv)
     state = new_initial_state(env.game)
-    is_chance_agent_required(env) || _sample_external_events!(env.rng, state)
-    env.state = state
-end
-
-function RLBase.reset!(env::OpenSpielEnv, state)
-    is_chance_agent_required(env) || _sample_external_events!(env.rng, state)
+    ChanceStyle(env) === STOCHASTIC && _sample_external_events!(env.rng, state)
     env.state = state
 end
 
@@ -117,33 +151,21 @@ end
 
 function (env::OpenSpielEnv)(action)
     apply_action(env.state, action)
-    is_chance_agent_required(env) || _sample_external_events!(env.rng, env.state)
+    ChanceStyle(env) === STOCHASTIC && _sample_external_events!(env.rng, env.state)
 end
 
-(env::OpenSpielEnv)(player, action) = env(DynamicStyle(env), player, action)
-
-function (env::OpenSpielEnv)(::Sequential, player, action)
-    if get_current_player(env) == player
-        apply_action(env.state, action)
-    else
-        apply_action(env.state, OpenSpiel.INVALID_ACTION[])
-    end
-    is_chance_agent_required(env) || _sample_external_events!(env.rng, env.state)
-end
-
-(env::OpenSpielEnv)(::Simultaneous, player, action) =
-    @error "Simultaneous environments can not take in the actions from players seperately"
-
-RLBase.get_actions(env::OpenSpielEnv) =
-    DiscreteSpace(0:num_distinct_actions(env.game)-1)
-
+RLBase.get_actions(env::OpenSpielEnv) = 0:num_distinct_actions(env.game)-1
 RLBase.get_current_player(env::OpenSpielEnv) = current_player(env.state)
 RLBase.get_chance_player(env::OpenSpielEnv) = convert(Int, OpenSpiel.CHANCE_PLAYER)
 RLBase.get_players(env::OpenSpielEnv) = 0:(num_players(env.game)-1)
 
-Random.seed!(env::OpenSpielEnv, seed) = Random.seed!(env.rng, seed)
-
-RLBase.ActionStyle(::OpenSpielEnv) = FULL_ACTION_SET
+function Random.seed!(env::OpenSpielEnv, seed)
+    if ChanceStyle(env) === STOCHASTIC
+        Random.seed!(env.rng, seed)
+    else
+        @error "only environments of STOCHASTIC are supported, perhaps initialize the environment with a seed argument instead?"
+    end
+end
 
 RLBase.get_legal_actions(env::OpenSpielEnv, player) = legal_actions(env.state, player)
 
@@ -155,7 +177,7 @@ function RLBase.get_legal_actions_mask(env::OpenSpielEnv, player)
     end
 end
 
-RLBase.get_terminal(env::OpenSpielEnv) = OpenSpiel.is_terminal(env.state)
+RLBase.get_terminal(env::OpenSpielEnv, player) = OpenSpiel.is_terminal(env.state)
 
 function RLBase.get_reward(env::OpenSpielEnv, player)
     if DynamicStyle(env) === SIMULTANEOUS && player == convert(Int, OpenSpiel.SIMULTANEOUS_PLAYER)

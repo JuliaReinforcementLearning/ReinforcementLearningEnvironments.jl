@@ -32,6 +32,7 @@
             get_terminal(env) && break
             action = rand(get_legal_actions(obs))
             env(action)
+            obs = observe(env)
         end
         @test true
     end
