@@ -45,7 +45,7 @@ Base.show(io::IO, env::CartPoleEnv{T}) where {T} =
 - `forcemag = T(10.0)`
 - `max_steps = 200`
 - 'dt = 0.02'
-- `seed = nothing`
+- `rng = Random.GLOBAL_RNG`
 """
 function CartPoleEnv(;
     T = Float64,
@@ -56,7 +56,7 @@ function CartPoleEnv(;
     forcemag = 10.0,
     max_steps = 200,
     dt = 0.02,
-    seed = nothing,
+    rng = Random.GLOBAL_RNG,
 )
     params = CartPoleEnvParams{T}(
         gravity,
@@ -80,7 +80,7 @@ function CartPoleEnv(;
         2,
         false,
         0,
-        MersenneTwister(seed),
+        rng,
     )
     reset!(cp)
     cp

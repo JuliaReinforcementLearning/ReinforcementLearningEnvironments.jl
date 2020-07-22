@@ -9,8 +9,7 @@
             a = rand(action_space)
             @test a in action_space
             @test env(a) === nothing
-            obs = observe(env)
-            if get_terminal(obs)
+            if get_terminal(env)
                 reset!(env)
             end
         end

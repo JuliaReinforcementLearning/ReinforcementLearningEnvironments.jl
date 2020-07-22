@@ -8,8 +8,7 @@ RLBase.get_actions(m::Union{<:POMDP,<:MDP}) = convert(AbstractSpace, actions(m))
 
 Random.seed!(env::POMDPEnv, seed) = Random.seed!(env.rng, seed)
 
-function POMDPEnv(model::POMDP; seed = nothing)
-    rng = MersenneTwister(seed)
+function POMDPEnv(model::POMDP; rng = Random.GLOBAL_RNG)
     s = initialstate(model, rng)
     a = rand(rng, actions(model))
     if :info in nodenames(DDNStructure(model))
@@ -59,8 +58,7 @@ RLBase.get_actions(env::POMDPEnv) = get_actions(env.model)
 
 Random.seed!(env::MDPEnv, seed) = seed!(env.rng, seed)
 
-function MDPEnv(model::MDP; seed = nothing)
-    rng = MersenneTwister(seed)
+function MDPEnv(model::MDP; rng=Random.GLOBAL_RNG)
     s = initialstate(model, rng)
     a = rand(rng, actions(model))
     if :info in nodenames(DDNStructure(model))

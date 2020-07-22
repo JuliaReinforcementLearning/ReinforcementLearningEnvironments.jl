@@ -78,7 +78,7 @@ function AcrobotEnv(;
     g = T(9.8),
     dt = T(0.2),
     max_steps = 200,
-    seed = nothing,
+    rng = Random.GLOBAL_RNG,
     book_or_nips = "book",
     avail_torque = [T(-1.0), T(0.0), T(1.0)],
 )
@@ -108,7 +108,7 @@ function AcrobotEnv(;
         0,
         false,
         0,
-        MersenneTwister(seed),
+        rng,
         T(0.0),
         book_or_nips,
         [T(-1.0), T(0.0), T(1.0)],

@@ -16,7 +16,7 @@ mutable struct AtariEnv{IsGrayScale,TerminalOnLifeLoss,N,S<:AbstractRNG} <: Abst
     frame_skip::Int
     reward::Float32
     lives::Int
-    seed::S
+    rng::S
 end
 export AtariEnv
 

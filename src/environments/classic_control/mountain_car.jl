@@ -52,7 +52,7 @@ end
 
 - `T = Float64`
 - `continuous = false`
-- `seed = nothing`
+- `rng = Random.GLOBAL_RNG`
 - `min_pos = -1.2`
 - `max_pos = 0.6`
 - `max_speed = 0.07`
@@ -62,7 +62,7 @@ end
 - `power = 0.001`
 - `gravity = 0.0025`
 """
-function MountainCarEnv(; T = Float64, continuous = false, seed = nothing, kwargs...)
+function MountainCarEnv(; T = Float64, continuous = false, rng = Random.GLOBAL_RNG, kwargs...)
     if continuous
         params = MountainCarEnvParams(; goal_pos = 0.45, power = 0.0015, T = T, kwargs...)
     else
@@ -80,7 +80,7 @@ function MountainCarEnv(; T = Float64, continuous = false, seed = nothing, kwarg
         rand(action_space),
         false,
         0,
-        MersenneTwister(seed),
+        rng,
     )
     reset!(env)
     env

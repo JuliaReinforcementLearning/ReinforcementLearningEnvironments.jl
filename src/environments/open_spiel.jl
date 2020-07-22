@@ -37,11 +37,11 @@ using StatsBase: sample, weights
 
 - `name`::`String`, you can call `ReinforcementLearningEnvironments.OpenSpiel.registered_names()` to see all the supported names. Note that the name can contains parameters, like `"goofspiel(imp_info=True,num_cards=4,points_order=descending)"`. Because the parameters part is parsed by the backend C++ code, the bool variable must be `True` or `False` (instead of `true` or `false`). Another approach is to just specify parameters in `kwargs` in the Julia style.
 - `state_type`::`Union{Symbol,Nothing}`, Supported values are [`:information`](https://github.com/deepmind/open_spiel/blob/1ad92a54f3b800394b2bc7f178ccdff62d8369e1/open_spiel/spiel.h#L342-L367), [`:observation`](https://github.com/deepmind/open_spiel/blob/1ad92a54f3b800394b2bc7f178ccdff62d8369e1/open_spiel/spiel.h#L397-L408) or `nothing`. The default value is `nothing`, which means `:information` if the game ` provides_information_state_tensor`. If not, it means `:observation`.
-- `seed::Int`, used to initial the internal `rng`. And the `rng` will only be used if the environment contains chance node, else it is set to `nothing`.
+- `rng::AbstractRNG`, used to initial the internal `rng`. And the `rng` will only be used if the environment contains chance node, else it is set to `nothing`.
 - `is_chance_agent_required::Bool=false`, by default, no chance agent is required. An internal `rng` will be used to automatically generate actions for chance node. If set to `true`, you need to feed the action of chance agent to environment explicitly. And the `seed` will be ignored.
 """
-function OpenSpielEnv(name; seed = nothing, state_type= nothing, is_chance_agent_required=false, kwargs...)
-    game = load_game(name, kwargs...)
+function OpenSpielEnv(name; rng=Random.GLOBAL_RNG, state_type= nothing, is_chance_agent_required=false, kwargs...)
+    game = load_game(name; kwargs...)
     game_type = get_type(game)
 
     has_info_state = provides_information_state_tensor(game_type)
@@ -76,8 +76,6 @@ function OpenSpielEnv(name; seed = nothing, state_type= nothing, is_chance_agent
     else 
         RLBase.STOCHASTIC
     end
-
-    rng = c === RLBase.STOCHASTIC ? MersenneTwister(seed) : nothing
 
     d = dynamics(game_type) == OpenSpiel.SEQUENTIAL ? RLBase.SEQUENTIAL : RLBase.SIMULTANEOUS
 
@@ -122,14 +120,14 @@ function Base.show(io::IO, env::OpenSpielEnv)
     show(io, env.state)
 end
 
-function Base.show(io::IO, obs::Observation{OpenSpielEnv{:information}})
-    println(io, "observer: $(obs.player)")
-    show(io, information_state_string(obs.env.state))
+function Base.show(io::IO, env::SubjectiveEnv{OpenSpielEnv{:information}})
+    println(io, "enverver: $(env.player)")
+    show(io, information_state_string(env.env.state))
 end
 
-function Base.show(io::IO, obs::Observation{OpenSpielEnv{:observation}})
-    println(io, "observer: $(obs.player)")
-    show(io, observation_string(obs.env.state))
+function Base.show(io::IO, env::SubjectiveEnv{OpenSpielEnv{:envervation}})
+    println(io, "enverver: $(env.player)")
+    show(io, envervation_string(env.env.state))
 end
 
 function RLBase.reset!(env::OpenSpielEnv)

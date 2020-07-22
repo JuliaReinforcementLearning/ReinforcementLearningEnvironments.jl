@@ -6,8 +6,6 @@ using .ArcadeLearningEnvironment
 
 This implementation follows the guidelines in [Revisiting the Arcade Learning Environment: Evaluation Protocols and Open Problems for General Agents](https://arxiv.org/abs/1709.06009)
 
-TODO: support seed! in single/multi thread
-
 # Keywords
 
 - `name::String="pong"`: name of the Atari environments. Use `ReinforcementLearningEnvironments.list_atari_rom_names()` to show all supported environments.
@@ -19,6 +17,8 @@ TODO: support seed! in single/multi thread
 - `color_averaging::Bool=false`: whether to perform phosphor averaging or not.
 - `max_num_frames_per_episode::Int=0`
 - `full_action_space::Bool=false`: by default, only use minimal action set. If `true`, one need to call `legal_actions` to get the valid action set. TODO
+- `seed::Int` is used to set the initial seed of the underlying C environment.
+- `rng::AbstractRNG` is used by the this wrapper environment to initialize the number of no-op steps after [`reset!`](@ref).
 
 See also the [python implementation](https://github.com/openai/gym/blob/c072172d64bdcd74313d97395436c592dc836d5c/gym/wrappers/atari_preprocessing.py#L8-L36)
 """
@@ -34,21 +34,22 @@ function AtariEnv(;
     max_num_frames_per_episode = 0,
     full_action_space = false,
     seed = nothing,
+    rng = Random.GLOBAL_RNG
 )
     frame_skip > 0 || throw(ArgumentError("frame_skip must be greater than 0!"))
     name in getROMList() ||
         throw(ArgumentError("unknown ROM name.\n\nRun `ReinforcementLearningEnvironments.list_atari_rom_names()` to see all the game names."))
 
-    if isnothing(seed)
-        seed = (MersenneTwister(), 0)
-    elseif seed isa Tuple{Int,Int}
-        seed = (MersenneTwister(seed[1]), seed[2])
-    else
-        @error "You must specify two seeds, one for Julia wrapper, one for internal C implementation" # ??? maybe auto generate two seed from one
-    end
-
     ale = ALE_new()
-    setInt(ale, "random_seed", seed[2])
+    if !isnothing(seed)
+        if rng === Random.GLOBAL_RNG
+            throw(ArgumentError("you set seed to $seed but the rng is not set"))
+        else
+            setInt(ale, "random_seed", seed)
+        end
+    elseif rng !== Random.GLOBAL_RNG
+        throw(ArgumentError("it seems that rng is set but seed is not set yet"))
+    end
     setInt(ale, "frame_skip", Int32(1))  # !!! do not use internal frame_skip here, we need to apply max-pooling for the latest two frames, so we need to manually implement the mechanism.
     setInt(ale, "max_num_frames_per_episode", max_num_frames_per_episode)
     setFloat(ale, "repeat_action_probability", Float32(repeat_action_probability))
@@ -68,7 +69,7 @@ function AtariEnv(;
         (fill(typemin(Cuchar), observation_size), fill(typemin(Cuchar), observation_size))
 
     env =
-        AtariEnv{grayscale_obs,terminal_on_life_loss,grayscale_obs ? 2 : 3,typeof(seed[1])}(
+        AtariEnv{grayscale_obs,terminal_on_life_loss,grayscale_obs ? 2 : 3,typeof(rng)}(
             ale,
             screens,
             actions,
@@ -78,7 +79,7 @@ function AtariEnv(;
             frame_skip,
             0.0f0,
             lives(ale),
-            seed[1],
+            rng,
         )
     finalizer(env) do x
         ALE_del(x.ale)
@@ -124,7 +125,7 @@ RLBase.get_state(env::AtariEnv) = env.screens[1]
 
 function RLBase.reset!(env::AtariEnv)
     reset_game(env.ale)
-    for _ in 1:rand(env.seed, 0:env.noopmax)
+    for _ in 1:rand(env.rng, 0:env.noopmax)
         act(env.ale, Int32(0))
     end
     update_screen!(env, env.screens[1])  # no need to update env.screens[2]

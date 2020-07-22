@@ -38,7 +38,7 @@ end
 - `max_steps = 200`
 - `continuous::Bool = true`
 - `n_actions::Int = 3`
-- `seed = nothing`
+- `rng = Random.GLOBAL_RNG`
 """
 function PendulumEnv(;
     T = Float64,
@@ -51,7 +51,7 @@ function PendulumEnv(;
     max_steps = 200,
     continuous::Bool = true,
     n_actions::Int = 3,
-    seed = nothing,
+    rng = Random.GLOBAL_RNG
 )
     high = T.([1, 1, max_speed])
     action_space = continuous ? ContinuousSpace(-2.0, 2.0) : DiscreteSpace(n_actions)
@@ -62,7 +62,7 @@ function PendulumEnv(;
         zeros(T, 2),
         false,
         0,
-        MersenneTwister(seed),
+        rng,
         zero(T),
         n_actions,
         rand(action_space),
