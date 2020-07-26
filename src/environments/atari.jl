@@ -17,8 +17,7 @@ This implementation follows the guidelines in [Revisiting the Arcade Learning En
 - `color_averaging::Bool=false`: whether to perform phosphor averaging or not.
 - `max_num_frames_per_episode::Int=0`
 - `full_action_space::Bool=false`: by default, only use minimal action set. If `true`, one need to call `legal_actions` to get the valid action set. TODO
-- `seed::Int` is used to set the initial seed of the underlying C environment.
-- `rng::AbstractRNG` is used by the this wrapper environment to initialize the number of no-op steps after [`reset!`](@ref).
+- `seed::Int` is used to set the initial seed of the underlying C environment and the rng used by the this wrapper environment to initialize the number of no-op steps at the beginning of each episode.
 
 See also the [python implementation](https://github.com/openai/gym/blob/c072172d64bdcd74313d97395436c592dc836d5c/gym/wrappers/atari_preprocessing.py#L8-L36)
 """
@@ -34,21 +33,17 @@ function AtariEnv(;
     max_num_frames_per_episode = 0,
     full_action_space = false,
     seed = nothing,
-    rng = Random.GLOBAL_RNG
 )
     frame_skip > 0 || throw(ArgumentError("frame_skip must be greater than 0!"))
     name in getROMList() ||
         throw(ArgumentError("unknown ROM name.\n\nRun `ReinforcementLearningEnvironments.list_atari_rom_names()` to see all the game names."))
 
     ale = ALE_new()
-    if !isnothing(seed)
-        if rng === Random.GLOBAL_RNG
-            throw(ArgumentError("you set seed to $seed but the rng is not set"))
-        else
-            setInt(ale, "random_seed", seed)
-        end
-    elseif rng !== Random.GLOBAL_RNG
-        throw(ArgumentError("it seems that rng is set but seed is not set yet"))
+    if isnothing(seed)
+        rng = Random.GLOBAL_RNG
+    else
+        setInt(ale, "random_seed", Int32(seed % typemax(Int32)))
+        rng = MersenneTwister(hash(seed+1))
     end
     setInt(ale, "frame_skip", Int32(1))  # !!! do not use internal frame_skip here, we need to apply max-pooling for the latest two frames, so we need to manually implement the mechanism.
     setInt(ale, "max_num_frames_per_episode", max_num_frames_per_episode)
