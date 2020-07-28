@@ -8,6 +8,7 @@ export GymEnv
 
 mutable struct AtariEnv{IsGrayScale,TerminalOnLifeLoss,N,S<:AbstractRNG} <: AbstractEnv
     ale::Ptr{Nothing}
+    name::String
     screens::Tuple{Array{UInt8,N},Array{UInt8,N}}  # for max-pooling
     actions::Vector{Int}
     action_space::DiscreteSpace{UnitRange{Int}}

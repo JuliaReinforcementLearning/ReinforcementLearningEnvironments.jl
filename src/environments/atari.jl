@@ -18,6 +18,7 @@ This implementation follows the guidelines in [Revisiting the Arcade Learning En
 - `max_num_frames_per_episode::Int=0`
 - `full_action_space::Bool=false`: by default, only use minimal action set. If `true`, one need to call `legal_actions` to get the valid action set. TODO
 - `seed::Int` is used to set the initial seed of the underlying C environment and the rng used by the this wrapper environment to initialize the number of no-op steps at the beginning of each episode.
+- `log_level::Symbol`, `:info`, `:warning` or `:error`. Default value is `:error`.
 
 See also the [python implementation](https://github.com/openai/gym/blob/c072172d64bdcd74313d97395436c592dc836d5c/gym/wrappers/atari_preprocessing.py#L8-L36)
 """
@@ -33,6 +34,7 @@ function AtariEnv(;
     max_num_frames_per_episode = 0,
     full_action_space = false,
     seed = nothing,
+    log_level = :error
 )
     frame_skip > 0 || throw(ArgumentError("frame_skip must be greater than 0!"))
     name in getROMList() ||
@@ -49,6 +51,7 @@ function AtariEnv(;
     setInt(ale, "max_num_frames_per_episode", max_num_frames_per_episode)
     setFloat(ale, "repeat_action_probability", Float32(repeat_action_probability))
     setBool(ale, "color_averaging", color_averaging)
+    setLoggerMode!(log_level)
     loadROM(ale, name)
 
     observation_size = grayscale_obs ? (getScreenWidth(ale), getScreenHeight(ale)) :
@@ -66,6 +69,7 @@ function AtariEnv(;
     env =
         AtariEnv{grayscale_obs,terminal_on_life_loss,grayscale_obs ? 2 : 3,typeof(rng)}(
             ale,
+            name,
             screens,
             actions,
             action_space,
@@ -113,6 +117,7 @@ end
 is_terminal(env::AtariEnv{<:Any,true}) = game_over(env.ale) || (lives(env.ale) < env.lives)
 is_terminal(env::AtariEnv{<:Any,false}) = game_over(env.ale)
 
+RLBase.get_name(env::AtariEnv) = "AtariEnv($(env.name))"
 RLBase.get_actions(env::AtariEnv) = env.action_space
 RLBase.get_reward(env::AtariEnv) = env.reward
 RLBase.get_terminal(env::AtariEnv) = is_terminal(env)
