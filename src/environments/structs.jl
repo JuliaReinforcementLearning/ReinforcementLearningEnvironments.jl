@@ -21,22 +21,20 @@ mutable struct AtariEnv{IsGrayScale,TerminalOnLifeLoss,N,S<:AbstractRNG} <: Abst
 end
 export AtariEnv
 
-mutable struct POMDPEnv{M,S,O,I,R,RNG<:AbstractRNG} <: AbstractEnv
+mutable struct POMDPEnv{M,S,A,O,R} <: AbstractEnv
     model::M
     state::S
+    action::A
     observation::O
-    info::I
-    reward::R
-    rng::RNG
+    rng::R
 end
 export POMDPEnv
 
-mutable struct MDPEnv{M,S,I,R,RNG<:AbstractRNG} <: AbstractEnv
+mutable struct MDPEnv{M,S,A,R} <: AbstractEnv
     model::M
     state::S
-    info::I
-    reward::R
-    rng::RNG
+    action::A
+    rng::R
 end
 export MDPEnv
 

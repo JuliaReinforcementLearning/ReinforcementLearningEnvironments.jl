@@ -41,7 +41,7 @@ end
 - `mass = 1.0`
 - `step_size = 0.01`
 - `maximum_time = 10.0`
-- `rng = nothing`
+- `rng = Random.GLOBAL_RNG`
 """
 function PendulumNonInteractiveEnv(;
     float_type = Float64,

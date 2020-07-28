@@ -3,12 +3,10 @@
     function basic_env_test(env, n = 100)
         reset!(env)
         action_space = get_actions(env)
-        @test action_space isa AbstractSpace
-        @test reset!(env) == nothing
         for _ in 1:n
             a = rand(action_space)
             @test a in action_space
-            @test env(a) === nothing
+            env(a)
             if get_terminal(env)
                 reset!(env)
             end
@@ -32,6 +30,7 @@
     for env_exp in [
         # :(basic_ViZDoom_env()),  # comment out due to https://github.com/JuliaReinforcementLearning/ViZDoom.jl/issues/7
         :(POMDPEnv(TigerPOMDP())),
+        :(MDPEnv(MountainCar())),
         :(MountainCarEnv()),
         :(ContinuousMountainCarEnv()),
         :(AcrobotEnv()),

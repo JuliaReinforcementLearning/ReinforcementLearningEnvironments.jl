@@ -37,7 +37,7 @@ using StatsBase: sample, weights
 
 - `name`::`String`, you can call `ReinforcementLearningEnvironments.OpenSpiel.registered_names()` to see all the supported names. Note that the name can contains parameters, like `"goofspiel(imp_info=True,num_cards=4,points_order=descending)"`. Because the parameters part is parsed by the backend C++ code, the bool variable must be `True` or `False` (instead of `true` or `false`). Another approach is to just specify parameters in `kwargs` in the Julia style.
 - `state_type`::`Union{Symbol,Nothing}`, Supported values are [`:information`](https://github.com/deepmind/open_spiel/blob/1ad92a54f3b800394b2bc7f178ccdff62d8369e1/open_spiel/spiel.h#L342-L367), [`:observation`](https://github.com/deepmind/open_spiel/blob/1ad92a54f3b800394b2bc7f178ccdff62d8369e1/open_spiel/spiel.h#L397-L408) or `nothing`. The default value is `nothing`, which means `:information` if the game ` provides_information_state_tensor`. If not, it means `:observation`.
-- `rng::AbstractRNG`, used to initial the internal `rng`. And the `rng` will only be used if the environment contains chance node, else it is set to `nothing`.
+- `rng::AbstractRNG`, used to initial the `rng` for chance nodes. And the `rng` will only be used if the environment contains chance node, else it is set to `nothing`. To set the seed of inner environment, you may check the documentation of each specific game. Usually adding a keyword argument named `seed` should work.
 - `is_chance_agent_required::Bool=false`, by default, no chance agent is required. An internal `rng` will be used to automatically generate actions for chance node. If set to `true`, you need to feed the action of chance agent to environment explicitly. And the `seed` will be ignored.
 """
 function OpenSpielEnv(name; rng=Random.GLOBAL_RNG, state_type= nothing, is_chance_agent_required=false, kwargs...)
@@ -114,22 +114,6 @@ RLBase.UtilityStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,
 Base.copy(env::OpenSpielEnv{S,T,ST,G,R}) where {S,T,ST,G,R} =
     OpenSpielEnv{S,T,ST,G,R}(copy(env.state), env.game, env.rng)
 
-function Base.show(io::IO, env::OpenSpielEnv)
-    RLBase.print_traits(io, env)
-    println()
-    show(io, env.state)
-end
-
-function Base.show(io::IO, env::SubjectiveEnv{OpenSpielEnv{:information}})
-    println(io, "enverver: $(env.player)")
-    show(io, information_state_string(env.env.state))
-end
-
-function Base.show(io::IO, env::SubjectiveEnv{OpenSpielEnv{:envervation}})
-    println(io, "enverver: $(env.player)")
-    show(io, envervation_string(env.env.state))
-end
-
 function RLBase.reset!(env::OpenSpielEnv)
     state = new_initial_state(env.game)
     ChanceStyle(env) === STOCHASTIC && _sample_external_events!(env.rng, state)
@@ -168,11 +152,12 @@ end
 RLBase.get_legal_actions(env::OpenSpielEnv, player) = legal_actions(env.state, player)
 
 function RLBase.get_legal_actions_mask(env::OpenSpielEnv, player)
-    if DynamicStyle(env) === SIMULTANEOUS && player == convert(Int, OpenSpiel.SIMULTANEOUS_PLAYER)
-        ones(Bool, length(legal_actions(env.state, player)))
-    else
-        convert(Vector{Bool}, legal_actions_mask(env.state, player))
+    n = player == convert(Int, OpenSpiel.CHANCE_PLAYER) ? max_chance_outcomes(env.game) : num_distinct_actions(env.game)
+    mask = BitArray(undef, n)
+    for a in legal_actions(env.state, player)
+        mask[a+1] = true
     end
+    mask
 end
 
 RLBase.get_terminal(env::OpenSpielEnv, player) = OpenSpiel.is_terminal(env.state)
