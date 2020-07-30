@@ -19,7 +19,7 @@ function GymEnv(name::String)
         Float64
     elseif obs_space isa DiscreteSpace
         Int
-    elseif obs_space isa TupleSpace
+    elseif obs_space isa VectSpace
         PyVector
     elseif obs_space isa DictSpace
         PyDict
@@ -95,7 +95,7 @@ function Base.convert(::Type{AbstractSpace}, s::PyObject)
             s.nvec .- one(eltype(s.nvec)),
         )
     elseif spacetype == "Tuple"
-        TupleSpace([convert(AbstractSpace, x) for x in s.spaces])
+        VectSpace([convert(AbstractSpace, x) for x in s.spaces])
     elseif spacetype == "Dict"
         DictSpace((k => convert(AbstractSpace, v) for (k, v) in s.spaces)...)
     else
