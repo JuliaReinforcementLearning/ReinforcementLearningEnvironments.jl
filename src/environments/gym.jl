@@ -75,7 +75,7 @@ function RLBase.get_state(env::GymEnv{T}) where {T}
     end
 end
 
-render(env::GymEnv) = env.pyenv.render()
+Base.display(env::GymEnv) = env.pyenv.render()
 
 ###
 ### utils

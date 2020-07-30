@@ -151,7 +151,7 @@ function imshowcolor(x::AbstractArray{UInt8,1}, dims)
     updatews()
 end
 
-function render(env::AtariEnv)
+function Base.display(env::AtariEnv)
     x = getScreenRGB(env.ale)
     imshowcolor(x, (Int(getScreenWidth(env.ale)), Int(getScreenHeight(env.ale))))
 end

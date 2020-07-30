@@ -138,7 +138,7 @@ function plotendofepisode(x, y, d)
     end
     return nothing
 end
-function render(env::CartPoleEnv)
+function Base.display(env::CartPoleEnv)
     s, a, d = env.state, env.action, env.done
     x, xdot, theta, thetadot = s
     l = 2 * env.params.halflength
