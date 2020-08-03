@@ -37,6 +37,7 @@ function GymEnv(name::String)
 end
 
 function (env::GymEnv{T})(action) where {T}
+    env.action_space isa VectSpace && (action = Tuple(action))  # ??? maybe add another TupleSpace
     pycall!(env.state, env.pyenv.step, PyObject, action)
     nothing
 end

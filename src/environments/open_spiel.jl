@@ -171,5 +171,6 @@ function RLBase.get_reward(env::OpenSpielEnv, player)
 end
 
 RLBase.get_state(env::OpenSpielEnv) = env.state
+RLBase.get_state(env::OpenSpielEnv, player::Integer) = env.state
 
 RLBase.get_history(env::OpenSpielEnv) = history(env.state)
