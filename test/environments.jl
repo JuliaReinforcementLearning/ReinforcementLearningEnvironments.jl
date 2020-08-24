@@ -29,6 +29,7 @@
 
     for env_exp in [
         # :(basic_ViZDoom_env()),  # comment out due to https://github.com/JuliaReinforcementLearning/ViZDoom.jl/issues/7
+        (:(SnakeGameEnv())),
         :(POMDPEnv(TigerPOMDP())),
         :(MDPEnv(MountainCar())),
         :(MountainCarEnv()),
