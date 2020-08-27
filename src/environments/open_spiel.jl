@@ -38,22 +38,22 @@ using StatsBase: sample, weights
 # Arguments
 
 - `name`::`String`, you can call `ReinforcementLearningEnvironments.OpenSpiel.registered_names()` to see all the supported names. Note that the name can contains parameters, like `"goofspiel(imp_info=True,num_cards=4,points_order=descending)"`. Because the parameters part is parsed by the backend C++ code, the bool variable must be `True` or `False` (instead of `true` or `false`). Another approach is to just specify parameters in `kwargs` in the Julia style.
-- `default_state_type`::`Union{AbstractStateStyle,Nothing}`, Supported values are [`Information{<:Union{String,Array}}`](https://github.com/deepmind/open_spiel/blob/1ad92a54f3b800394b2bc7f178ccdff62d8369e1/open_spiel/spiel.h#L342-L367), [`Observation{<:Union{String,Array}}`](https://github.com/deepmind/open_spiel/blob/1ad92a54f3b800394b2bc7f178ccdff62d8369e1/open_spiel/spiel.h#L397-L408) or `nothing`.
+- `default_state_style`::`Union{AbstractStateStyle,Nothing}`, Supported values are [`Information{<:Union{String,Array}}`](https://github.com/deepmind/open_spiel/blob/1ad92a54f3b800394b2bc7f178ccdff62d8369e1/open_spiel/spiel.h#L342-L367), [`Observation{<:Union{String,Array}}`](https://github.com/deepmind/open_spiel/blob/1ad92a54f3b800394b2bc7f178ccdff62d8369e1/open_spiel/spiel.h#L397-L408) or `nothing`.
 - `rng::AbstractRNG`, used to initial the `rng` for chance nodes. And the `rng` will only be used if the environment contains chance node, else it is set to `nothing`. To set the seed of inner environment, you may check the documentation of each specific game. Usually adding a keyword argument named `seed` should work.
 - `is_chance_agent_required::Bool=false`, by default, no chance agent is required. An internal `rng` will be used to automatically generate actions for chance node. If set to `true`, you need to feed the action of chance agent to environment explicitly. And the `seed` will be ignored.
 """
 function OpenSpielEnv(
     name;
     rng = Random.GLOBAL_RNG,
-    default_state_type = nothing,
+    default_state_style = nothing,
     is_chance_agent_required = false,
     kwargs...,
 )
     game = load_game(name; kwargs...)
     game_type = get_type(game)
 
-    if isnothing(default_state_type)
-        default_state_type = if provides_information_state_string(game_type)
+    if isnothing(default_state_style)
+        default_state_style = if provides_information_state_string(game_type)
             RLBase.Information{String}()
         elseif provides_information_state_tensor(game_type)
             RLBase.Information{Array}()
@@ -102,7 +102,7 @@ function OpenSpielEnv(
     end
 
     env =
-        OpenSpielEnv{default_state_type,Tuple{c,d,i,n,r,u},typeof(state),typeof(game),typeof(rng)}(
+        OpenSpielEnv{Tuple{default_state_style,c,d,i,n,r,u},typeof(state),typeof(game),typeof(rng)}(
             state,
             game,
             rng,
@@ -112,14 +112,15 @@ function OpenSpielEnv(
 end
 
 RLBase.ActionStyle(env::OpenSpielEnv) = FULL_ACTION_SET
-RLBase.ChanceStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = C
-RLBase.InformationStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = I
-RLBase.NumAgentStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = N
-RLBase.RewardStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = R
-RLBase.UtilityStyle(env::OpenSpielEnv{S,Tuple{C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = U
+RLBase.ChanceStyle(env::OpenSpielEnv{Tuple{S,C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = C
+RLBase.InformationStyle(env::OpenSpielEnv{Tuple{S,C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = I
+RLBase.NumAgentStyle(env::OpenSpielEnv{Tuple{S,C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = N
+RLBase.RewardStyle(env::OpenSpielEnv{Tuple{S,C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = R
+RLBase.UtilityStyle(env::OpenSpielEnv{Tuple{S,C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = U
+RLBase.DefaultStateStyle(env::OpenSpielEnv{Tuple{S,C,D,I,N,R,U}}) where {S,C,D,I,N,R,U} = S
 
-Base.copy(env::OpenSpielEnv{S,T,ST,G,R}) where {S,T,ST,G,R} =
-    OpenSpielEnv{S,T,ST,G,R}(copy(env.state), env.game, env.rng)
+Base.copy(env::OpenSpielEnv{T,ST,G,R}) where {T,ST,G,R} =
+    OpenSpielEnv{T,ST,G,R}(copy(env.state), env.game, env.rng)
 
 function RLBase.reset!(env::OpenSpielEnv)
     state = new_initial_state(env.game)
@@ -131,7 +132,7 @@ _sample_external_events!(::Nothing, state) = nothing
 
 function _sample_external_events!(rng::AbstractRNG, state)
     while is_chance_node(state)
-        apply_action(state, rand(rng, reinterpret(ActionProbPair{Int, Float64}, chance_outcomes(state))))
+        apply_action(state, rand(rng, reinterpret(ActionProbPair{Int, Float64}, chance_outcomes(state))).action)
     end
 end
 
@@ -145,6 +146,7 @@ RLBase.get_chance_player(env::OpenSpielEnv) = convert(Int, OpenSpiel.CHANCE_PLAY
 RLBase.get_players(env::OpenSpielEnv) = get_players(env, ChanceStyle(env))
 RLBase.get_players(env::OpenSpielEnv, ::Any) = 0:(num_players(env.game)-1)
 RLBase.get_players(env::OpenSpielEnv, ::Union{ExplicitStochastic, SampledStochastic}) = (get_chance_player(env), 0:(num_players(env.game)-1)...)
+RLBase.get_num_players(env::OpenSpielEnv) = length(get_players(env))
 
 function RLBase.get_actions(env::OpenSpielEnv, player)
     if player == get_chance_player(env)
@@ -185,12 +187,14 @@ function RLBase.get_reward(env::OpenSpielEnv, player)
     if DynamicStyle(env) === SIMULTANEOUS &&
        player == convert(Int, OpenSpiel.SIMULTANEOUS_PLAYER)
         rewards(env.state)
+    elseif player == get_chance_player(env)
+        0  # ??? type stable
     else
         player_reward(env.state, player)
     end
 end
 
-RLBase.get_state(env::OpenSpielEnv{S}, player::Integer) where S = get_state(env, S, player)
+RLBase.get_state(env::OpenSpielEnv, player::Integer) = get_state(env, DefaultStateStyle(env), player)
 RLBase.get_state(env::OpenSpielEnv, ::RLBase.Information{String}, player) = information_state_string(env.state, player)
 RLBase.get_state(env::OpenSpielEnv, ::RLBase.Information{Array}, player) = information_state_tensor(env.state, player)
 RLBase.get_state(env::OpenSpielEnv, ::Observation{String}, player) = observation_string(env.state, player)
