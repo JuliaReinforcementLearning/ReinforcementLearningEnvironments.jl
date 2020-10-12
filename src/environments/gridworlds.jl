@@ -24,4 +24,4 @@ ReinforcementLearningBase.get_legal_actions_mask(env::RLBaseGridWorld) = GridWor
 
 ReinforcementLearningBase.reset!(env::RLBaseGridWorld) = GridWorlds.reset!(env.env)
 
-(env::RLBaseGridWorld)(action) = env.env(action) 
+(env::RLBaseGridWorld)(action) = env.env(action)
