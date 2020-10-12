@@ -13,7 +13,7 @@ RLBase.get_state(env::RLBaseGridWorld) = GridWorlds.get_state(env.env)
 
 RLBase.get_actions(env::RLBaseGridWorld) = GridWorlds.get_actions(env.env)
 
-RLBase.get_reward(env::RLBaseGridWorld) = GridWorlds.get_reward(env)
+RLBase.get_reward(env::RLBaseGridWorld) = GridWorlds.get_reward(env.env)
 
 RLBase.get_terminal(env::RLBaseGridWorld) = GridWorlds.get_terminal(env.env)
 
