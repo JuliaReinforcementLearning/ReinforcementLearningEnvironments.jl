@@ -14,10 +14,10 @@ deck = vcat(collect(1:10), [10, 10, 10])
 
 mutable struct BlackjackEnv <: AbstractEnv
     action_space::DiscreteSpace{UnitRange{Int64}}
-    observation_space::VectSpace{Tuple{DiscreteSpace{UnitRange{Int64}},DiscreteSpace{UnitRange{Int64}},DiscreteSpace{UnitRange{Int64}}}}
+    observation_space::MultiDiscreteSpace{Vector{Int64}}
     dealer::Array
     player::Array
-    state::Tuple{Int64,Int64,Int64}
+    state::Array{Int64,1}
     action::Int
     reward::Int
     done::Bool
@@ -53,14 +53,16 @@ http://incompleteideas.net/book/the-book-2nd.html
 function BlackjackEnv(;natural=false,rng = Random.GLOBAL_RNG)
     # natural = flag to payout on a "natural" blackjack win, like casion rules
     action_space = DiscreteSpace(2)
-    observation_space = VectSpace((DiscreteSpace(32),DiscreteSpace(11),DiscreteSpace(2)))
+    low = [1,1,1]
+    high = [32,11,2]
+    observation_space = MultiDiscreteSpace(low, high)
     
-    bj = BlackjackEnv(action_space, observation_space, [], [], (0,0,0), 2, 0, false, false, rng)
+    bj = BlackjackEnv(action_space, observation_space, [], [], [0,0,0], 2, 0, false, false, rng)
     reset!(bj)
     bj
 end
 
-@inline _get_obs(env::BlackjackEnv) = (sum_hand(env.player), env.dealer[1], usable_ace(env.player))
+@inline _get_obs(env::BlackjackEnv) = [sum_hand(env.player), env.dealer[1], usable_ace(env.player)]
 
 function RLBase.reset!(env::BlackjackEnv)
     env.dealer = draw_hand(env.rng)
