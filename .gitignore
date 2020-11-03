@@ -11,3 +11,7 @@ _vizdoom.ini
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# vim generated temp files
+*~
+*.swp
