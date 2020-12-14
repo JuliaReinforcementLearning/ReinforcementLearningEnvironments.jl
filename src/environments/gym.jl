@@ -47,9 +47,9 @@ function RLBase.reset!(env::GymEnv)
     nothing
 end
 
-RLBase.get_actions(env::GymEnv) = env.action_space
+RLBase.action_space(env::GymEnv) = env.action_space
 
-function RLBase.get_reward(env::GymEnv{T}) where {T}
+function RLBase.reward(env::GymEnv{T}) where {T}
     if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type)
         obs, reward, isdone, info = convert(Tuple{T,Float64,Bool,PyDict}, env.state)
         reward
@@ -58,7 +58,7 @@ function RLBase.get_reward(env::GymEnv{T}) where {T}
     end
 end
 
-function RLBase.get_terminal(env::GymEnv{T}) where {T}
+function RLBase.is_terminated(env::GymEnv{T}) where {T}
     if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type)
         obs, reward, isdone, info = convert(Tuple{T,Float64,Bool,PyDict}, env.state)
         isdone
@@ -67,7 +67,7 @@ function RLBase.get_terminal(env::GymEnv{T}) where {T}
     end
 end
 
-function RLBase.get_state(env::GymEnv{T}) where {T}
+function RLBase.state(env::GymEnv{T}) where {T}
     if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type)
         obs, reward, isdone, info = convert(Tuple{T,Float64,Bool,PyDict}, env.state)
         obs

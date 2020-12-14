@@ -163,7 +163,7 @@ RLBase.get_players(env::OpenSpielEnv, ::Union{ExplicitStochastic,SampledStochast
     (get_chance_player(env), 0:(num_players(env.game)-1)...)
 RLBase.get_num_players(env::OpenSpielEnv) = length(get_players(env))
 
-function RLBase.get_actions(env::OpenSpielEnv, player)
+function RLBase.action_space(env::OpenSpielEnv, player)
     if player == get_chance_player(env)
         reinterpret(ActionProbPair{Int,Float64}, chance_outcomes(env.state))
     else
@@ -198,9 +198,9 @@ function Random.seed!(env::OpenSpielEnv, seed)
     end
 end
 
-RLBase.get_terminal(env::OpenSpielEnv, player) = OpenSpiel.is_terminal(env.state)
+RLBase.is_terminated(env::OpenSpielEnv, player) = OpenSpiel.is_terminal(env.state)
 
-function RLBase.get_reward(env::OpenSpielEnv, player)
+function RLBase.reward(env::OpenSpielEnv, player)
     if DynamicStyle(env) === SIMULTANEOUS &&
        player == convert(Int, OpenSpiel.SIMULTANEOUS_PLAYER)
         rewards(env.state)
@@ -211,15 +211,15 @@ function RLBase.get_reward(env::OpenSpielEnv, player)
     end
 end
 
-RLBase.get_state(env::OpenSpielEnv, player::Integer) =
+RLBase.state(env::OpenSpielEnv, player::Integer) =
     get_state(env, DefaultStateStyle(env), player)
-RLBase.get_state(env::OpenSpielEnv, ::RLBase.Information{String}, player) =
+RLBase.state(env::OpenSpielEnv, ::RLBase.Information{String}, player) =
     information_state_string(env.state, player)
-RLBase.get_state(env::OpenSpielEnv, ::RLBase.Information{Array}, player) =
+RLBase.state(env::OpenSpielEnv, ::RLBase.Information{Array}, player) =
     information_state_tensor(env.state, player)
-RLBase.get_state(env::OpenSpielEnv, ::Observation{String}, player) =
+RLBase.state(env::OpenSpielEnv, ::Observation{String}, player) =
     observation_string(env.state, player)
-RLBase.get_state(env::OpenSpielEnv, ::Observation{Array}, player) =
+RLBase.state(env::OpenSpielEnv, ::Observation{Array}, player) =
     observation_tensor(env.state, player)
 
 RLBase.get_history(env::OpenSpielEnv) = history(env.state)

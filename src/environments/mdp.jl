@@ -1,6 +1,6 @@
 using .POMDPs
 
-RLBase.get_actions(m::Union{<:POMDP,<:MDP}) = convert(AbstractSpace, actions(m))
+RLBase.action_space(m::Union{<:POMDP,<:MDP}) = convert(AbstractSpace, actions(m))
 
 #####
 # POMDPEnv
@@ -20,9 +20,9 @@ function (env::POMDPEnv)(a)
     env.observation = rand(env.rng, observation(env.model, old_state, a, env.state))
 end
 
-RLBase.get_state(env::POMDPEnv) = env.observation
-RLBase.get_reward(env::POMDPEnv) = reward(env.state, env.action)
-RLBase.get_terminal(env::POMDPEnv) = isterminal(env.model, env.state)
+RLBase.state(env::POMDPEnv) = env.observation
+RLBase.reward(env::POMDPEnv) = reward(env.state, env.action)
+RLBase.is_terminated(env::POMDPEnv) = isterminal(env.model, env.state)
 
 function RLBase.reset!(env::POMDPEnv)
     env.state = rand(env.rng, initialstate(env.model))
@@ -30,7 +30,7 @@ function RLBase.reset!(env::POMDPEnv)
     nothing
 end
 
-RLBase.get_actions(env::POMDPEnv) = actions(env.model)
+RLBase.action_space(env::POMDPEnv) = actions(env.model)
 Random.seed!(env::POMDPEnv, seed) = seed!(env.rng, seed)
 
 #####
@@ -49,14 +49,14 @@ function (env::MDPEnv)(a)
     env.state = rand(env.rng, transition(env.model, old_state, a))
 end
 
-RLBase.get_state(env::MDPEnv) = env.state
-RLBase.get_reward(env::MDPEnv) = reward(env.state, env.action)
-RLBase.get_terminal(env::MDPEnv) = isterminal(env.model, env.state)
+RLBase.state(env::MDPEnv) = env.state
+RLBase.reward(env::MDPEnv) = reward(env.state, env.action)
+RLBase.is_terminated(env::MDPEnv) = isterminal(env.model, env.state)
 
 function RLBase.reset!(env::MDPEnv)
     env.state = rand(env.rng, initialstate(env.model))
 end
 
-RLBase.get_actions(env::MDPEnv) = actions(env.model)
+RLBase.action_space(env::MDPEnv) = actions(env.model)
 
 Random.seed!(env::MDPEnv, seed) = seed!(env.rng, seed)

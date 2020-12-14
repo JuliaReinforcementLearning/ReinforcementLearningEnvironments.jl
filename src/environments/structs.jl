@@ -1,4 +1,4 @@
-struct GymEnv{T,Ta<:AbstractSpace,To<:AbstractSpace,P} <: AbstractEnv
+struct GymEnv{T,Ta,To,P} <: AbstractEnv
     pyenv::P
     observation_space::To
     action_space::Ta
@@ -11,8 +11,8 @@ mutable struct AtariEnv{IsGrayScale,TerminalOnLifeLoss,N,S<:AbstractRNG} <: Abst
     name::String
     screens::Tuple{Array{UInt8,N},Array{UInt8,N}}  # for max-pooling
     actions::Vector{Int}
-    action_space::DiscreteSpace{UnitRange{Int}}
-    observation_space::MultiDiscreteSpace{Array{UInt8,N}}
+    action_space::Base.OneTo{Int}
+    observation_space::Array{UnitRange{UInt},N}
     noopmax::Int
     frame_skip::Int
     reward::Float32

@@ -118,10 +118,10 @@ is_terminal(env::AtariEnv{<:Any,true}) = game_over(env.ale) || (lives(env.ale) <
 is_terminal(env::AtariEnv{<:Any,false}) = game_over(env.ale)
 
 RLBase.get_name(env::AtariEnv) = "AtariEnv($(env.name))"
-RLBase.get_actions(env::AtariEnv) = env.action_space
-RLBase.get_reward(env::AtariEnv) = env.reward
-RLBase.get_terminal(env::AtariEnv) = is_terminal(env)
-RLBase.get_state(env::AtariEnv) = env.screens[1]
+RLBase.action_space(env::AtariEnv) = env.action_space
+RLBase.reward(env::AtariEnv) = env.reward
+RLBase.is_terminated(env::AtariEnv) = is_terminal(env)
+RLBase.state(env::AtariEnv) = env.screens[1]
 
 function RLBase.reset!(env::AtariEnv)
     reset_game(env.ale)
