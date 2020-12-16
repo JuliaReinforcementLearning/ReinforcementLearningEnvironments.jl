@@ -12,7 +12,7 @@ mutable struct AtariEnv{IsGrayScale,TerminalOnLifeLoss,N,S<:AbstractRNG} <: Abst
     screens::Tuple{Array{UInt8,N},Array{UInt8,N}}  # for max-pooling
     actions::Vector{Int}
     action_space::Base.OneTo{Int}
-    observation_space::Array{UnitRange{UInt},N}
+    observation_space::Space{Array{ClosedInterval{UInt8},N}}
     noopmax::Int
     frame_skip::Int
     reward::Float32
@@ -21,10 +21,9 @@ mutable struct AtariEnv{IsGrayScale,TerminalOnLifeLoss,N,S<:AbstractRNG} <: Abst
 end
 export AtariEnv
 
-mutable struct OpenSpielEnv{T,ST,G,R} <: AbstractEnv
-    state::ST
+mutable struct OpenSpielEnv{S,G} <: AbstractEnv
+    state::S
     game::G
-    rng::R
 end
 export OpenSpielEnv
 

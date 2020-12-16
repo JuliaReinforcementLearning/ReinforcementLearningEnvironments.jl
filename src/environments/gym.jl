@@ -13,15 +13,15 @@ function GymEnv(name::String)
     end
     obs_space = space_transform(pyenv.observation_space)
     act_space = space_transform(pyenv.action_space)
-    obs_type = if obs_space isa Union{Array{<:Interval},Array{<:ZeroTo}}
+    obs_type = if obs_space isa Space{<:Union{Array{<:Interval},Array{<:ZeroTo}}}
         PyArray
     elseif obs_space isa Interval
         Float64
     elseif obs_space isa ZeroTo
         Int
-    elseif obs_space isa Tuple
+    elseif obs_space isa Space{<:Tuple}
         PyVector
-    elseif obs_space isa Dict
+    elseif obs_space isa Space{<:Dict}
         PyDict
     else
         error("don't know how to get the observation type from observation space of $obs_space")
@@ -94,17 +94,17 @@ Random.seed!(env::GymEnv, s) = env.pyenv.seed(s)
 function space_transform(s::PyObject)
     spacetype = s.__class__.__name__
     if spacetype == "Box"
-        ClosedInterval.(s.low,s.high)
+        Space(ClosedInterval.(s.low,s.high))
     elseif spacetype == "Discrete"  # for GymEnv("CliffWalking-v0"), `s.n` is of type PyObject (numpy.int64)
         ZeroTo(py"int($s.n)" - 1)
     elseif spacetype == "MultiBinary"
-        ZeroTo.(ones(Int8, s.n))
+        Space(ZeroTo.(ones(Int8, s.n)))
     elseif spacetype == "MultiDiscrete"
-        ZeroTo.(s.nvec .- one(eltype(s.nvec)))
+        Space(ZeroTo.(s.nvec .- one(eltype(s.nvec))))
     elseif spacetype == "Tuple"
-        Tuple(space_transform(x) for x in s.spaces)
+        Space(Tuple(space_transform(x) for x in s.spaces))
     elseif spacetype == "Dict"
-        Dict((k => space_transform(v) for (k, v) in s.spaces)...)
+        Space(Dict((k => space_transform(v) for (k, v) in s.spaces)...))
     else
         error("Don't know how to convert Gym Space of class [$(spacetype)]")
     end

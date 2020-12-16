@@ -106,7 +106,7 @@ function RLBase.reset!(env::MountainCarEnv{A,T}) where {A,T}
     nothing
 end
 
-function (env::MountainCarEnv{<:Vector{<:ClosedInterval}})(a::AbstractFloat)
+function (env::MountainCarEnv{<:ClosedInterval})(a::AbstractFloat)
     @assert a in env.action_space
     env.action = a
     _step!(env, a)

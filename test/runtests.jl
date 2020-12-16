@@ -3,8 +3,6 @@ using ReinforcementLearningBase
 using ReinforcementLearningEnvironments
 using ArcadeLearningEnvironment
 using PyCall
-using POMDPs
-using POMDPModels
 using OpenSpiel
 # using SnakeGames
 using Random

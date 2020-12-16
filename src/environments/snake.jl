@@ -63,4 +63,4 @@ function RLBase.reset!(env::SnakeGameEnv)
     map!(length, env.latest_snakes_length, env.game.snakes)
 end
 
-Base.display(env::SnakeGameEnv) = display(env.game)
+Base.display(io::IO, m::MIME, env::SnakeGameEnv) = display(io, m, env.game)

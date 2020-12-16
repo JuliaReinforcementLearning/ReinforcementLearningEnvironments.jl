@@ -2,12 +2,12 @@
 
     function basic_env_test(env, n = 100)
         reset!(env)
-        action_space = get_actions(env)
+        A = action_space(env)
         for _ in 1:n
-            a = rand(action_space)
-            @test a in action_space
+            a = rand(A)
+            @test a in A
             env(a)
-            if get_terminal(env)
+            if is_terminated(env)
                 reset!(env)
             end
         end
@@ -30,8 +30,6 @@
     for env_exp in [
         # :(basic_ViZDoom_env()),  # comment out due to https://github.com/JuliaReinforcementLearning/ViZDoom.jl/issues/7
         # (:(SnakeGameEnv())),  # avoid breaking CI
-        :(POMDPEnv(TigerPOMDP())),
-        :(MDPEnv(MountainCar())),
         :(MountainCarEnv()),
         :(ContinuousMountainCarEnv()),
         :(AcrobotEnv()),
