@@ -37,7 +37,7 @@ end
 mutable struct MountainCarEnv{A,T,ACT,R<:AbstractRNG} <: AbstractEnv
     params::MountainCarEnvParams{T}
     action_space::A
-    observation_space::Vector{ClosedInterval{T}}
+    observation_space::Space{Vector{ClosedInterval{T}}}
     state::Vector{T}
     action::ACT
     done::Bool
@@ -77,7 +77,7 @@ function MountainCarEnv(;
     env = MountainCarEnv(
         params,
         action_space,
-        [params.min_pos..params.max_pos, -params.max_speed..params.max_speed],
+        Space([params.min_pos..params.max_pos, -params.max_speed..params.max_speed]),
         zeros(T, 2),
         rand(action_space),
         false,

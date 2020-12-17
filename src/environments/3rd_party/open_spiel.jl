@@ -65,7 +65,7 @@ RLBase.players(env::OpenSpielEnv) = 0:(num_players(env.game)-1)
 
 function RLBase.action_space(env::OpenSpielEnv, player)
     if player == chance_player(env)
-        reinterpret(ActionProbPair{Int,Float64}, chance_outcomes(env.state))
+        [k for (k,v) in chance_outcomes(env.state)]
     else
         ZeroTo(num_distinct_actions(env.game)-1)
     end
@@ -73,11 +73,13 @@ end
 
 function RLBase.legal_action_space(env::OpenSpielEnv, player)
     if player == chance_player(env)
-        reinterpret(ActionProbPair{Int,Float64}, chance_outcomes(env.state))
+        [k for (k,v) in chance_outcomes(env.state)]
     else
         legal_actions(env.state, player)
     end
 end
+
+RLBase.prob(env::OpenSpielEnv, player) = [v for (k,v) in chance_outcomes(env.state)]
 
 function RLBase.legal_action_space_mask(env::OpenSpielEnv, player)
     n =
@@ -107,7 +109,7 @@ function RLBase.state(env::OpenSpielEnv, ss::RLBase.AbstractStateStyle, player)
     if player < 0  # TODO: revisit this in OpenSpiel@v0.2
         @warn "unexpected player $player, falling back to default state value." maxlog=1
         s = state_space(env)
-        if s isa WorldSpace{String}
+        if s isa WorldSpace
             ""
         elseif s isa Array{<:Interval}
             rand(s)
@@ -122,7 +124,7 @@ _state(env::OpenSpielEnv, ::RLBase.InformationSet{Array}, player) = information_
 _state(env::OpenSpielEnv, ::Observation{String}, player) = observation_string(env.state, player)
 _state(env::OpenSpielEnv, ::Observation{Array}, player) = observation_tensor(env.state, player)
 
-RLBase.state_space(env::OpenSpielEnv, ::Union{InformationSet{String},Observation{String}}, p) = WorldSpace{String}()
+RLBase.state_space(env::OpenSpielEnv, ::Union{InformationSet{String},Observation{String}}, p) = WorldSpace{AbstractString}()
 RLBase.state_space(env::OpenSpielEnv, ::Union{InformationSet{Array},Observation{Array}}, p) = Space(fill(typemin(Float64)..typemax(Float64), information_state_tensor_size(env.state)))
 
 Random.seed!(env::OpenSpielEnv, s) = @warn "seed!(OpenSpielEnv) is not supported currently."

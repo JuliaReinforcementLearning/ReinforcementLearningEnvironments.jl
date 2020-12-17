@@ -7,16 +7,6 @@
     ]
         @info "testing OpenSpiel: $name"
         env = OpenSpielEnv(name)
-        RLBase.current_player(env)
-        action_space(env)
-
-        reset!(env)
-
-        while true
-            is_terminated(env) && break
-            action = rand(legal_action_space(env))
-            env(action)
-        end
-        @test true
+        RLBase.test_runnable!(env)
     end
 end

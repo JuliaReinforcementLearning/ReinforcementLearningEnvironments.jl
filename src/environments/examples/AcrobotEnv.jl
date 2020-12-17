@@ -117,7 +117,7 @@ RLBase.action_space(env::AcrobotEnv) = Base.OneTo(3)
 
 function RLBase.state_space(env::AcrobotEnv{T}) where T
     high = [1.0, 1.0, 1.0, 1.0, env.params.max_vel_a, env.params.max_vel_b]
-    ClosedInterval{T}.(-high, high)
+    Space(ClosedInterval{T}.(-high, high))
 end
 
 RLBase.is_terminated(env::AcrobotEnv) = env.done

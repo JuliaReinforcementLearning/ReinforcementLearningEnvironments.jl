@@ -1,4 +1,7 @@
 @testset "atari" begin
+    atari_env_names = ReinforcementLearningEnvironments.list_atari_rom_names()
+    atari_env_names = filter(x -> x ∉ ["pacman", "surround"], atari_env_names)
+
     @testset "seed" begin
         env = AtariEnv(; name = "pong", seed = 456)
         old_states = []

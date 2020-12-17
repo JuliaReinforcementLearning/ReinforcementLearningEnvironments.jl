@@ -13,7 +13,7 @@ end
 mutable struct PendulumEnv{A,T,R<:AbstractRNG} <: AbstractEnv
     params::PendulumEnvParams{T}
     action_space::A
-    observation_space::Vector{ClosedInterval{T}}
+    observation_space::Space{Vector{ClosedInterval{T}}}
     state::Vector{T}
     done::Bool
     t::Int
@@ -57,7 +57,7 @@ function PendulumEnv(;
     env = PendulumEnv(
         PendulumEnvParams(max_speed, max_torque, g, m, l, dt, max_steps),
         action_space,
-        ClosedInterval{T}.(-high, high),
+        Space(ClosedInterval{T}.(-high, high)),
         zeros(T, 2),
         false,
         0,
