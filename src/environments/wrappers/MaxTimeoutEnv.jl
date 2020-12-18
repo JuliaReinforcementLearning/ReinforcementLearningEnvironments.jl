@@ -1,6 +1,6 @@
 export MaxTimeoutEnv
 
-mutable struct MaxTimeoutEnv{E<:AbstractEnv} <: AbstractEnv
+mutable struct MaxTimeoutEnv{E<:AbstractEnv} <: AbstractEnvWrapper
     env::E
     max_t::Int
     current_t::Int
@@ -12,7 +12,7 @@ end
 Force `is_terminated(env)` return `true` after `max_t` interactions.
 """
 MaxTimeoutEnv(env::E, max_t::Int; current_t::Int = 1) where {E<:AbstractEnv} =
-    MaxTimeoutEnv(E, max_t, current_t)
+    MaxTimeoutEnv(env, max_t, current_t)
 
 function (env::MaxTimeoutEnv)(args...; kwargs...)
     env.env(args...; kwargs...)
@@ -27,3 +27,6 @@ end
 
 RLBase.is_terminated(env::MaxTimeoutEnv) = (env.current_t > env.max_t) || is_terminated(env.env)
 
+
+RLBase.state(env::MaxTimeoutEnv, ss::RLBase.AbstractStateStyle) = state(env.env, ss)
+RLBase.state_space(env::MaxTimeoutEnv, ss::RLBase.AbstractStateStyle) = state_space(env.env, ss)

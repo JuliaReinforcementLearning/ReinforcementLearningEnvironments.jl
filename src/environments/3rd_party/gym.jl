@@ -36,6 +36,8 @@ function GymEnv(name::String)
     env
 end
 
+Base.nameof(env::GymEnv) = env.pyenv.__class__.__name__
+
 function Base.copy(env::GymEnv)
     @warn "clone method is not exposed in GymEnv"
     env
@@ -58,7 +60,7 @@ RLBase.action_space(env::GymEnv) = env.action_space
 RLBase.state_space(env::GymEnv) = env.observation_space
 
 function RLBase.reward(env::GymEnv{T}) where {T}
-    if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type)
+    if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type) && length(env.state) == 4
         obs, reward, isdone, info = convert(Tuple{T,Float64,Bool,PyDict}, env.state)
         reward
     else
@@ -67,7 +69,7 @@ function RLBase.reward(env::GymEnv{T}) where {T}
 end
 
 function RLBase.is_terminated(env::GymEnv{T}) where {T}
-    if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type)
+    if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type) && length(env.state) == 4
         obs, reward, isdone, info = convert(Tuple{T,Float64,Bool,PyDict}, env.state)
         isdone
     else
@@ -76,11 +78,11 @@ function RLBase.is_terminated(env::GymEnv{T}) where {T}
 end
 
 function RLBase.state(env::GymEnv{T}) where {T}
-    if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type)
+    if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type) && length(env.state) == 4
         obs, reward, isdone, info = convert(Tuple{T,Float64,Bool,PyDict}, env.state)
         obs
     else
-        state = convert(T, env.state)
+        convert(T, env.state)
     end
 end
 

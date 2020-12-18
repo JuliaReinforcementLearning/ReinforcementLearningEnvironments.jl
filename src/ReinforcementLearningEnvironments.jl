@@ -6,12 +6,14 @@ using GR
 using Requires
 using IntervalSets
 using Base.Threads: @spawn
+using Markdown
 
 const RLEnvs = ReinforcementLearningEnvironments
 export RLEnvs
 
 include("base.jl")
 include("environments/environments.jl")
+include("converters.jl")
 
 # dynamic loading environments
 function __init__()

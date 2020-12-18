@@ -70,8 +70,9 @@ struct Space{T}
     s::T
 end
 
-@forward Space.s Base.similar, Base.getindex, Base.setindex!, Base.size, Base.length
+@forward Space.s Base.getindex, Base.setindex!, Base.size, Base.length
 
+Base.similar(s::Space, args...) = Space(similar(s.s, args...))
 
 Random.rand(s::Space) = rand(Random.GLOBAL_RNG, s)
 

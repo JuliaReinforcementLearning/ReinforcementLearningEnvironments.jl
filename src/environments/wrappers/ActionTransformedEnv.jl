@@ -1,6 +1,6 @@
 export ActionTransformedEnv
 
-struct ActionTransformedEnv{P,M,E<:AbstractEnv} <: AbstractEnv
+struct ActionTransformedEnv{P,M,E<:AbstractEnv} <: AbstractEnvWrapper
     action_space_mapping::P
     action_mapping::M
     env::E
@@ -14,7 +14,7 @@ end
 feeding it into `env`.
 """
 function ActionTransformedEnv(env; action_space_mapping=identity, action_mapping=identity)
-    ActionTransformedEnv(env, action_space_mapping, action_mapping)
+    ActionTransformedEnv(action_space_mapping, action_mapping, env)
 end
 
 for f in vcat(RLBase.ENV_API, RLBase.MULTI_AGENT_ENV_API)
@@ -24,7 +24,10 @@ for f in vcat(RLBase.ENV_API, RLBase.MULTI_AGENT_ENV_API)
     end
 end
 
-RLBase.state_space(env::ActionTransformedEnv) = env.action_space_mapping(action_space(env.env))
+RLBase.state(env::ActionTransformedEnv, ss::RLBase.AbstractStateStyle) = state(env.env, ss)
+RLBase.state_space(env::ActionTransformedEnv, ss::RLBase.AbstractStateStyle) = state_space(env.env, ss)
+
+RLBase.action_space(env::ActionTransformedEnv) = env.action_space_mapping(action_space(env.env))
 RLBase.legal_action_space(env::ActionTransformedEnv) = env.action_space_mapping(legal_action_space(env.env))
 
-(env::ActionTransformedEnv)(action, args...; kwargs...) = env.env(env.action_space_mapping(action), args...; kwargs...)
+(env::ActionTransformedEnv)(action, args...; kwargs...) = env.env(env.action_mapping(action), args...; kwargs...)

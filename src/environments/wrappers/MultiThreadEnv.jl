@@ -1,3 +1,5 @@
+export MultiThreadEnv
+
 """
     MultiThreadEnv(envs::Vector{<:AbstractEnv})
 
@@ -5,14 +7,21 @@ Wrap multiple instances of the same environment type into one environment.
 Each environment will run in parallel by leveraging `Threads.@spawn`.
 So remember to set the environment variable `JULIA_NUM_THREADS`!
 """
-struct MultiThreadEnv{E,N,A,S,L} <: AbstractEnv
+struct MultiThreadEnv{E,S,R,AS,SS,L} <: AbstractEnvWrapper
     envs::Vector{E}
-    states::Array{Float32, N}
-    rewards::Vector{Float32}
-    terminals::Vector{Bool}
-    action_space::A
-    state_space::S
+    states::S
+    rewards::R
+    terminals::BitArray{1}
+    action_space::AS
+    state_space::SS
     legal_action_space_mask::L
+end
+
+function Base.show(io::IO, t::MIME"text/markdown", env::MultiThreadEnv)
+    s = """
+    # MultiThreadEnv($(length(env)) x $(nameof(env[1])))
+    """
+    show(io, t, Markdown.parse(s))
 end
 
 function MultiThreadEnv(f, n)
@@ -28,7 +37,7 @@ function MultiThreadEnv(f, n)
             sₙ = state(envs[j])
             for i in CartesianIndices(size(S))
                 S_batch[i, j] = Sₙ[i]
-                s_batch[i, j] = sₙ
+                s_batch[i, j] = sₙ[i]
             end
         end
     else
@@ -46,12 +55,12 @@ function MultiThreadEnv(f, n)
             end
         end
     else
-        A_batch = Space(state_space.(envs))
+        A_batch = Space(action_space.(envs))
     end
 
     r_batch = reward.(envs)
     t_batch = is_terminated.(envs)
-    if ActionStyle(env) === FULL_ACTION_SET
+    if ActionStyle(envs[1]) === FULL_ACTION_SET
         m_batch = BitArray(undef, size(A_batch))
         for j in 1:n
             L = legal_action_space_mask(envs[j])
@@ -82,7 +91,7 @@ function RLBase.reset!(env::MultiThreadEnv; is_force = false)
         end
     else
         @sync for i in 1:length(env)
-            if get_terminal(env[i])
+            if is_terminated(env[i])
                 @spawn begin
                     reset!(env[i])
                 end
@@ -93,7 +102,8 @@ end
 
 const MULTI_THREAD_ENV_CACHE = IdDict{AbstractEnv,Dict{Symbol,Array}}()
 
-function RLBase.state(env::MultiThreadEnv{E,N}) where {E,N}
+function RLBase.state(env::MultiThreadEnv)
+    N = ndims(env.states)
     @sync for i in 1:length(env)
         @spawn selectdim(env.states, N, i) .= state(env[i])
     end
@@ -119,7 +129,8 @@ end
 
 RLBase.action_space(env::MultiThreadEnv) = env.action_space
 RLBase.state_space(env::MultiThreadEnv) = env.state_space
-RLBase.current_player(env::MultiThreadEnv) = current_player.(env.envs)
+RLBase.legal_action_space(env::MultiThreadEnv) = Space(legal_action_space.(env.envs))
+# RLBase.current_player(env::MultiThreadEnv) = current_player.(env.envs)
 
 for f in RLBase.ENV_API
     if endswith(String(f), "Style")
