@@ -116,7 +116,7 @@ gen_traits_table(envs) = gen_traits_table(stdout, envs)
 
 function gen_traits_table(io, envs)
     trait_dict = Dict()
-    for f in env_traits()
+    for f in RLBase.env_traits()
         for env in envs
             if !haskey(trait_dict, f)
                 trait_dict[f] = Set()
@@ -177,7 +177,7 @@ function gen_traits_table(io, envs)
     for env in envs
         println(
             io,
-            "<li> <a href=\"https://github.com/JuliaReinforcementLearning/ReinforcementLearningBase.jl/tree/master/src/examples/$(nameof(env)).jl\"> $(nameof(env)) </a></li>",
+            "<li> <a href=\"https://juliareinforcementlearning.org/ReinforcementLearning.jl/latest/rl_envs/#ReinforcementLearningEnvironments.$(nameof(env))-Tuple{}\"> $(nameof(env)) </a></li>",
         )
     end
     print(io, "</ol>")
