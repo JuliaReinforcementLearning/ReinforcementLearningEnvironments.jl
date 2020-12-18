@@ -61,6 +61,8 @@ environments, you'll need to add those dependencies correspondingly.
 <li> <a href="https://juliareinforcementlearning.org/ReinforcementLearning.jl/latest/rl_envs/#ReinforcementLearningEnvironments.PendulumEnv-Tuple{}"> PendulumEnv </a></li>
 </ol>
 
+**Note**: Many traits are *borrowed* from [OpenSpiel](https://github.com/deepmind/open_spiel).
+
 ### 3-rd Party Environments
 
 | Environment Name | Dependent Package Name | Description |
