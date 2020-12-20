@@ -16,7 +16,6 @@ import .OpenSpiel:
     num_distinct_actions,
     num_players,
     apply_action,
-    current_player,
     player_reward,
     legal_actions,
     legal_actions_mask,
@@ -55,7 +54,7 @@ RLBase.reset!(env::OpenSpielEnv) = env.state = new_initial_state(env.game)
 
 (env::OpenSpielEnv)(action::Int) = apply_action(env.state, action)
 
-RLBase.current_player(env::OpenSpielEnv) = current_player(env.state)
+RLBase.current_player(env::OpenSpielEnv) = OpenSpiel.current_player(env.state)
 RLBase.chance_player(env::OpenSpielEnv) = convert(Int, OpenSpiel.CHANCE_PLAYER)
 
 function RLBase.players(env::OpenSpielEnv)

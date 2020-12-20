@@ -133,6 +133,8 @@ end
 (env::KuhnPokerEnv)(action::Symbol, ::ChancePlayer) = push!(env.cards, action)
 (env::KuhnPokerEnv)(action::Symbol, ::Int) = push!(env.actions, action)
 
+RLBase.reward(::KuhnPokerEnv, ::ChancePlayer) = 0
+
 function RLBase.reward(env::KuhnPokerEnv, p)
     if is_terminated(env)
         v = KUHN_POKER_REWARD_TABLE[(env.cards..., env.actions...)]
