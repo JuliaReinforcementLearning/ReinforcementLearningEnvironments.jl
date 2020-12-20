@@ -60,7 +60,7 @@ RLBase.chance_player(env::OpenSpielEnv) = convert(Int, OpenSpiel.CHANCE_PLAYER)
 function RLBase.players(env::OpenSpielEnv)
     p = 0:(num_players(env.game)-1)
     if ChanceStyle(env) === EXPLICIT_STOCHASTIC
-        (p..., OpenSpiel.CHANCE_PLAYER)
+        (p..., RLBase.chance_player(env))
     else
         p
     end
