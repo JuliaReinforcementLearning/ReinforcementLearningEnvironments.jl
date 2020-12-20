@@ -1,4 +1,4 @@
-export is_discrete_space, discrete2standard_discrete, explicit_stochastic2stochastic
+export is_discrete_space, discrete2standard_discrete
 
 is_discrete_space(x) = is_discrete_space(typeof(x))
 
