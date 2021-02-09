@@ -15,30 +15,7 @@ mutable struct BitFlippingEnv <: AbstractEnv
     t::Int
 end
 
-function BitFlippingEnv(; N = 8)
-    rng = Random.GLOBAL_RNG
-    state = bitrand(rng, N)
-    goal_state = bitrand(rng, N)
-    max_steps = N
-    BitFlippingEnv(N, rng, state, goal_state, max_steps, 0)
-end
-
-function BitFlippingEnv(; N = 8, T = 8)
-    rng = Random.GLOBAL_RNG
-    state = bitrand(rng, N)
-    goal_state = bitrand(rng, N)
-    max_steps = T
-    BitFlippingEnv(N, rng, state, goal_state, max_steps, 0)
-end
-
-function BitFlippingEnv(; N = 8, rng = Random.GLOBAL_RNG)
-    state = bitrand(rng, N)
-    goal_state = bitrand(rng, N)
-    max_steps = N
-    BitFlippingEnv(N, rng, state, goal_state, max_steps, 0)
-end
-
-function BitFlippingEnv(; N = 8, T = 8,rng = Random.GLOBAL_RNG)
+function BitFlippingEnv(; N = 8, T = N,rng = Random.GLOBAL_RNG)
     state = bitrand(rng, N)
     goal_state = bitrand(rng, N)
     max_steps = T
