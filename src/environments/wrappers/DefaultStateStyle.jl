@@ -13,4 +13,3 @@ DefaultStateStyleEnv{S}(env::E) where {S,E} = DefaultStateStyleEnv{S,E}(env)
 
 RLBase.DefaultStateStyle(::DefaultStateStyleEnv{S}) where {S} = S
 
-(env::DefaultStateStyleEnv)(args...; kwargs...) = env.env(args...; kwargs...)

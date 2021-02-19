@@ -16,7 +16,5 @@ end
 
 StateOverriddenEnv(f) = env -> StateOverriddenEnv(f, env)
 
-(env::StateOverriddenEnv)(args...; kwargs...) = env.env(args...; kwargs...)
-
 RLBase.state(env::StateOverriddenEnv, args...; kwargs...) =
     env.f(state(env.env, args...; kwargs...))
