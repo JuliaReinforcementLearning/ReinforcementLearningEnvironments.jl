@@ -28,7 +28,7 @@
         @test s_env ∈ state_space(env)
 
         E = DefaultStateStyleEnv{Observation{Int}()}(env)  # error probably somewhere here
-        s = state(env)
+        s = state(E)
         @test s isa Int
         @test s ∈ state_space(E)
     end
