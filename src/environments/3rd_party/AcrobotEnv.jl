@@ -86,6 +86,7 @@ function RLBase.reset!(env::AcrobotEnv{T}) where {T <: Number}
     env.t = 0
     env.action = 2
     env.done = false
+    env.reward = -1
     nothing
 end
 
