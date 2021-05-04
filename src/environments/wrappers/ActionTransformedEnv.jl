@@ -21,6 +21,13 @@ function ActionTransformedEnv(
     ActionTransformedEnv(action_space_mapping, action_mapping, env)
 end
 
+function ActionTransformedEnv(;
+    action_space_mapping = identity,
+    action_mapping = identity,
+)
+    env -> ActionTransformedEnv(action_space_mapping, action_mapping, env)
+end
+
 RLBase.action_space(env::ActionTransformedEnv, args...) =
     env.action_space_mapping(action_space(env.env), args...)
 

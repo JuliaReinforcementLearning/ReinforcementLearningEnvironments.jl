@@ -1,5 +1,10 @@
 export RewardOverriddenEnv
 
+"""
+    RewardOverriddenEnv(env, f)
+
+Apply `f` on `reward(env)`.
+"""
 struct RewardOverriddenEnv{F,E<:AbstractEnv} <: AbstractEnvWrapper
     env::E
     f::F
