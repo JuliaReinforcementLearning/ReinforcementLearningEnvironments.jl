@@ -1,5 +1,7 @@
 # ReinforcementLearningEnvironments.jl
 
+⚠️ This package is moved into [ReinforcementLearning.jl](https://github.com/JuliaReinforcementLearning/ReinforcementLearning.jl) (2021-05-06)
+
 ![CI](https://github.com/JuliaReinforcementLearning/ReinforcementLearningEnvironments.jl/workflows/CI/badge.svg)
 
 This package serves as a one-stop place for different kinds of reinforcement learning environments.
